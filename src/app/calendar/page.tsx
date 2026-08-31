@@ -52,7 +52,7 @@ export default function CalendarPage() {
   const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [foodSearchQuery, setFoodSearchQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState<FoodEntry>(POPULAR_FOODS_DATABASE[0]);
-  const [foodQuantity, setFoodQuantity] = useState<number>(50);
+  const [foodQuantity, setFoodQuantity] = useState<number>(100);
   const [selectedUnitIndex, setSelectedUnitIndex] = useState<number>(0);
   const [isManualOverride, setIsManualOverride] = useState(false);
 
@@ -139,7 +139,7 @@ export default function CalendarPage() {
     const entries = Object.values(logs);
     const completedWorkouts = entries.filter(l => l.attendance === 'completed').length;
     const restDays = entries.filter(l => l.attendance === 'rest').length;
-    const activeEntries = entries.filter(l => l.attendance !== 'none' || l.foods?.length > 0);
+    const activeEntries = entries.filter(l => l.attendance !== 'none' || (l.foods && l.foods.length > 0));
     const avgScore = activeEntries.length > 0
       ? Math.round(activeEntries.reduce((acc, l) => acc + (l.growthScore || 0), 0) / activeEntries.length)
       : 0;
@@ -223,14 +223,37 @@ export default function CalendarPage() {
 
   const handleSelectFood = (food: FoodEntry) => {
     setSelectedFood(food);
-    setSelectedUnitIndex(food.defaultUnitIndex);
-    // Set smart initial quantity based on portion type
+    setSelectedUnitIndex(0);
+    // Set appropriate initial quantity
     if (food.portionType === 'weight') {
-      setFoodQuantity(food.quickPortions[1] || 50); // e.g. 50g for soya, 150g for rice
+      setFoodQuantity(food.quickPortions[1] || 100);
     } else {
-      setFoodQuantity(food.quickPortions[1] || 2); // e.g. 2 for eggs/rotis
+      setFoodQuantity(food.quickPortions[1] || 2);
     }
     setFoodSearchQuery('');
+  };
+
+  const handlePortionUnitChange = (unitIdx: number) => {
+    setSelectedUnitIndex(unitIdx);
+    const unit = selectedFood.servingUnits[unitIdx];
+    // If user selects a specific serving unit (e.g. Bowl 150g or Plate 250g), set quantity to 1 count
+    if (unit.grams > 1 && foodQuantity > 10) {
+      setFoodQuantity(1);
+    } else if (unit.grams === 1 && foodQuantity <= 5) {
+      // If user switches back to Grams, restore a standard gram quantity
+      setFoodQuantity(selectedFood.quickPortions[1] || 100);
+    }
+  };
+
+  const handleQuickPortionClick = (qty: number) => {
+    // When clicking a quick portion chip:
+    // If weight-based, ensure unit is Grams (index 0) so qty represents exact grams
+    if (selectedFood.portionType === 'weight') {
+      setSelectedUnitIndex(0);
+    } else {
+      setSelectedUnitIndex(0);
+    }
+    setFoodQuantity(qty);
   };
 
   const startCustomFood = (name: string) => {
@@ -258,10 +281,11 @@ export default function CalendarPage() {
       };
     } else {
       if (!calculatedNutrition) return;
-      const unitText = selectedFood.servingUnits[selectedUnitIndex]?.label || '';
-      const displayTitle = selectedFood.portionType === 'weight'
-        ? `${calculatedNutrition.totalGrams}g ${selectedFood.name}`
-        : `${foodQuantity}x ${selectedFood.name} (${unitText})`;
+      const unit = selectedFood.servingUnits[selectedUnitIndex];
+      const isExactGrams = unit?.grams === 1;
+      const displayTitle = isExactGrams
+        ? `${calculatedNutrition.totalGrams}g ${selectedFood.name.split(' /')[0]}`
+        : `${foodQuantity}x ${selectedFood.name.split(' /')[0]} (${unit?.label})`;
 
       item = {
         id: `food_${Date.now()}`,
@@ -320,6 +344,12 @@ export default function CalendarPage() {
     setToast({ message: 'Food entry removed', type: 'info' });
   };
 
+  const formattedSelectedDate = useMemo(() => {
+    if (!selectedDate) return '';
+    const d = new Date(selectedDate + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }, [selectedDate]);
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -332,7 +362,7 @@ export default function CalendarPage() {
             Attendance & Daily Growth Tracker
           </h1>
           <p className="text-gray-400 mt-1">
-            Log foods and workouts with instant smart ingredient & calorie auto-calculation
+            Log foods and workouts with instant smart ingredient and calorie auto-calculation
           </p>
         </div>
 
@@ -485,7 +515,7 @@ export default function CalendarPage() {
                   <div className="w-full flex items-center justify-between pt-1 border-t border-gray-700/50">
                     <span className="text-[9px] text-gray-400 font-medium">Growth</span>
                     <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${hasData ? scoreColor : 'text-gray-500'}`}>
-                      {hasData ? `${score}%` : 'â€”'}
+                      {hasData ? `${score}%` : '-'}
                     </span>
                   </div>
                 </button>
@@ -499,7 +529,7 @@ export default function CalendarPage() {
       <Modal
         isOpen={!!selectedDate}
         onClose={() => { setSelectedDate(null); setShowAddFood(false); setIsManualOverride(false); }}
-        title={selectedDate ? `Daily Log â€” ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}` : ''}
+        title={selectedDate ? `Daily Log : ${formattedSelectedDate}` : ''}
         size="lg"
       >
         <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
@@ -572,7 +602,7 @@ export default function CalendarPage() {
                 className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                {showAddFood ? 'Close Form' : '+ Add Food'}
+                <span>{showAddFood ? 'Close Form' : 'Add Food'}</span>
               </button>
             </div>
 
@@ -619,13 +649,13 @@ export default function CalendarPage() {
                     {/* Food Search Box */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-medium text-gray-300">
-                        Type Food Name (e.g. Soya Chunks, Roti, Egg, Rice, Chicken, Paneer, Oats, Banana)
+                        Search Food (e.g. Bhindi, Roti, Soya, Rice, Egg, Paneer, Chicken, Oats)
                       </label>
                       <div className="relative">
                         <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                         <input
                           type="text"
-                          placeholder="Search food (e.g. soyab, roti, paneer, egg, rice)..."
+                          placeholder="Type food name in English or Hindi (e.g. bhindi, dal, roti, egg)..."
                           value={foodSearchQuery}
                           onChange={e => setFoodSearchQuery(e.target.value)}
                           className="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg text-xs focus:outline-none focus:border-orange-500"
@@ -671,9 +701,9 @@ export default function CalendarPage() {
                       <span className="text-[11px] text-gray-400">Quick Picks:</span>
                       <div className="flex flex-wrap gap-1.5">
                         {[
-                          'soya_chunks', 'roti_wheat', 'roti_maida', 'egg_boiled_whole',
-                          'rice_white_cooked', 'paneer_raw', 'chicken_breast_cooked',
-                          'banana_fresh', 'dal_yellow_cooked', 'oats_cooked'
+                          'bhindi_masala', 'roti_wheat', 'rice_white_cooked', 'dal_yellow_cooked',
+                          'soya_chunks', 'egg_boiled_whole', 'paneer_raw', 'chicken_breast_cooked',
+                          'banana_fresh', 'oats_cooked'
                         ].map(foodId => {
                           const food = POPULAR_FOODS_DATABASE.find(f => f.id === foodId);
                           if (!food) return null;
@@ -708,19 +738,19 @@ export default function CalendarPage() {
                         </span>
                       </div>
 
-                      {/* Quick Quantity Chips (e.g. 50g, 100g, or 1, 2, 3 pieces) */}
+                      {/* Quick Quantity Chips */}
                       <div>
                         <span className="text-[11px] text-gray-300 block mb-1">
-                          {selectedFood.portionType === 'weight' ? 'Select Weight:' : 'Select Count / Pieces:'}
+                          {selectedFood.portionType === 'weight' ? 'Quick Weight Options:' : 'Quick Quantity Options:'}
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {selectedFood.quickPortions.map(qty => (
                             <button
                               key={qty}
                               type="button"
-                              onClick={() => setFoodQuantity(qty)}
+                              onClick={() => handleQuickPortionClick(qty)}
                               className={`text-xs font-semibold px-3 py-1 rounded-lg border transition-all ${
-                                foodQuantity === qty
+                                foodQuantity === qty && selectedUnitIndex === 0
                                   ? 'bg-orange-500 border-orange-500 text-white'
                                   : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-500'
                               }`}
@@ -735,7 +765,7 @@ export default function CalendarPage() {
                         <div>
                           <label className="block text-[11px] font-medium text-gray-300 mb-1 flex items-center gap-1">
                             <Scale className="w-3 h-3 text-orange-400" />
-                            {selectedFood.portionType === 'weight' ? 'Exact Grams (g)' : 'Number of Pieces'}
+                            {selectedFood.portionType === 'weight' ? 'Amount / Number' : 'Count (Pieces)'}
                           </label>
                           <input
                             type="number"
@@ -753,7 +783,7 @@ export default function CalendarPage() {
                           </label>
                           <select
                             value={selectedUnitIndex}
-                            onChange={e => setSelectedUnitIndex(Number(e.target.value))}
+                            onChange={e => handlePortionUnitChange(Number(e.target.value))}
                             className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-orange-500"
                           >
                             {selectedFood.servingUnits.map((u, i) => (
@@ -768,7 +798,7 @@ export default function CalendarPage() {
                         <div className="bg-gray-800/90 rounded-lg p-3.5 border border-orange-500/30 space-y-2.5">
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-gray-300">
-                              Total Serving: <strong className="text-white">{calculatedNutrition.totalGrams}g</strong>
+                              Total Weight: <strong className="text-white">{calculatedNutrition.totalGrams}g</strong>
                             </span>
                             <span className="text-orange-400 font-extrabold text-sm flex items-center gap-1">
                               <Flame className="w-4 h-4" /> {calculatedNutrition.calories} kcal
@@ -865,9 +895,11 @@ export default function CalendarPage() {
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/20"
                 >
                   <Plus className="w-4 h-4" />
-                  {isManualOverride
-                    ? `Add "${manualName || 'Custom Food'}" to ${selectedMealType}`
-                    : `Add ${selectedFood.portionType === 'weight' ? `${foodQuantity}g` : `${foodQuantity}x`} ${selectedFood.name.split(' /')[0]} to ${selectedMealType}`}
+                  <span>
+                    {isManualOverride
+                      ? `Add "${manualName || 'Custom Food'}" to ${selectedMealType}`
+                      : `Add ${selectedFood.portionType === 'weight' && selectedFood.servingUnits[selectedUnitIndex]?.grams === 1 ? `${foodQuantity}g` : `${foodQuantity}x`} ${selectedFood.name.split(' /')[0]} to ${selectedMealType}`}
+                  </span>
                 </button>
               </div>
             )}
@@ -884,8 +916,14 @@ export default function CalendarPage() {
                         </span>
                         <p className="text-xs font-semibold text-white">{food.name}</p>
                       </div>
-                      <p className="text-[11px] text-gray-300 mt-1">
-                        <strong>{food.calories} kcal</strong> Â· <span className="text-orange-300 font-semibold">{food.protein}g Protein</span> Â· {food.carbs}g Carbs Â· {food.fat}g Fat
+                      <p className="text-[11px] text-gray-300 mt-1 flex items-center flex-wrap gap-1">
+                        <strong>{food.calories} kcal</strong>
+                        <span className="text-gray-500 font-bold">|</span>
+                        <span className="text-orange-300 font-semibold">{food.protein}g Protein</span>
+                        <span className="text-gray-500 font-bold">|</span>
+                        <span>{food.carbs}g Carbs</span>
+                        <span className="text-gray-500 font-bold">|</span>
+                        <span>{food.fat}g Fat</span>
                       </p>
                     </div>
 
@@ -901,7 +939,7 @@ export default function CalendarPage() {
               </div>
             ) : (
               <p className="text-xs text-gray-400 bg-gray-700/30 p-4 rounded-lg text-center border border-gray-700">
-                No meals logged for this day yet. Click <strong>+ Add Food</strong> above to log your food!
+                No meals logged for this day yet. Click <strong>Add Food</strong> above to log your food!
               </p>
             )}
           </div>

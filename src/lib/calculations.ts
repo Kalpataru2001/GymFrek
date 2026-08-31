@@ -337,19 +337,19 @@ export function calculateDailyGrowthScore(
   if (score >= 90) {
     grade = 'Elite';
     badgeColor = 'text-green-400 bg-green-500/10 border-green-500/30';
-    summary = '🌟 Outstanding day! Workout and nutrition are dialed in for peak muscle & fat progress.';
+    summary = 'Outstanding day! Workout and nutrition are dialed in for peak muscle & fat progress.';
   } else if (score >= 75) {
     grade = 'Great';
     badgeColor = 'text-orange-400 bg-orange-500/10 border-orange-500/30';
-    summary = '💪 Solid progress! High consistency driving real results.';
+    summary = 'Solid progress! High consistency driving real results.';
   } else if (score >= 60) {
     grade = 'Good';
     badgeColor = 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
-    summary = '⚡ Good effort. Hit your protein target to maximize your daily growth.';
+    summary = 'Good effort. Hit your protein target to maximize your daily growth.';
   } else if (score >= 40) {
     grade = 'Fair';
     badgeColor = 'text-blue-400 bg-blue-500/10 border-blue-500/30';
-    summary = '👍 Partial tracking logged. Make sure to complete today\'s meal logs.';
+    summary = 'Partial tracking logged. Make sure to complete today\'s meal logs.';
   }
 
   return {

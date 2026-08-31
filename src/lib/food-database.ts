@@ -6,7 +6,7 @@
 export type FoodPortionType = 'count' | 'weight' | 'volume';
 
 export interface FoodServingUnit {
-  label: string; // e.g. "Piece / Roti (35g)", "50g", "100g", "Cup (150g)", "Katori / Bowl (150g)"
+  label: string; // e.g. "Grams (g)", "Piece / Roti (35g)", "Bowl (150g)"
   grams: number; // weight in grams
 }
 
@@ -38,8 +38,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Indian Sabzi & Veg',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
       { label: 'Small Bowl (100g)', grams: 100 },
       { label: 'Large Plate (250g)', grams: 250 },
     ],
@@ -55,8 +55,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Indian Sabzi & Veg',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
       { label: 'Large Bowl (200g)', grams: 200 },
     ],
     defaultUnitIndex: 0,
@@ -71,8 +71,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Indian Sabzi & Veg',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [100, 150, 200],
@@ -86,13 +86,13 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Indian Sabzi & Veg',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
       { label: 'Large Bowl (200g)', grams: 200 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [150, 200, 250],
-    ingredients: ['Fresh Spinach PurÃ©e (Palak)', 'Paneer Cubes', 'Garlic', 'Ghee/Oil', 'Spices'],
+    ingredients: ['Fresh Spinach Puree (Palak)', 'Paneer Cubes', 'Garlic', 'Ghee/Oil', 'Spices'],
     per100g: { calories: 150, protein: 8.5, carbs: 4.5, fat: 11.0, fiber: 2.5 },
   },
   {
@@ -102,8 +102,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Indian Sabzi & Veg',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [100, 150, 200],
@@ -117,8 +117,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Indian Sabzi & Veg',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [100, 150, 200],
@@ -132,8 +132,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Indian Sabzi & Veg',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [100, 150, 200],
@@ -149,9 +149,9 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dals & Curries',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
       { label: 'Large Bowl (200g)', grams: 200 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [150, 200, 250],
@@ -165,13 +165,13 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dals & Curries',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
       { label: 'Large Bowl (200g)', grams: 200 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [150, 200, 250],
-    ingredients: ['Red Kidney Beans (Rajma)', 'Onion', 'Tomato PurÃ©e', 'Ginger Garlic', 'Spices'],
+    ingredients: ['Red Kidney Beans (Rajma)', 'Onion', 'Tomato Puree', 'Ginger Garlic', 'Spices'],
     per100g: { calories: 125, protein: 6.8, carbs: 19.5, fat: 2.8, fiber: 5.5 },
   },
   {
@@ -181,13 +181,13 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dals & Curries',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
       { label: 'Large Bowl (200g)', grams: 200 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [150, 200, 250],
-    ingredients: ['White Chickpeas (Chole)', 'Onion-Tomato Gravy', 'Chole Masala Spices', 'Tea Decoction'],
+    ingredients: ['White Chickpeas (Chole)', 'Onion-Tomato Gravy', 'Chole Masala Spices'],
     per100g: { calories: 135, protein: 7.2, carbs: 21.0, fat: 3.2, fiber: 5.8 },
   },
   {
@@ -197,8 +197,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dals & Curries',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [100, 150, 200],
@@ -212,9 +212,9 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dals & Curries',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Bowl (150g)', grams: 150 },
       { label: 'Large Bowl (200g)', grams: 200 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [150, 200, 250],
@@ -232,7 +232,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     servingUnits: [
       { label: 'Roti / Piece (35g)', grams: 35 },
       { label: 'Large Roti (50g)', grams: 50 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2, 3, 4, 5],
@@ -248,7 +248,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     servingUnits: [
       { label: 'Roti / Piece (45g)', grams: 45 },
       { label: 'Large Parotta (80g)', grams: 80 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2, 3, 4],
@@ -262,10 +262,10 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Grains, Roti & Rice',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Standard Plate (150g)', grams: 150 },
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Small Katori / Bowl (100g)', grams: 100 },
+      { label: 'Standard Plate (150g)', grams: 150 },
       { label: 'Large Plate (250g)', grams: 250 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [100, 150, 200, 250],
@@ -279,13 +279,13 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Grains, Roti & Rice',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Standard Plate (250g)', grams: 250 },
       { label: 'Half Plate (150g)', grams: 150 },
       { label: 'Large Plate (350g)', grams: 350 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
-    quickPortions: [200, 250, 300, 350],
+    quickPortions: [150, 200, 250, 300],
     ingredients: ['Basmati Rice', 'Chicken Pieces', 'Ghee / Oil', 'Yogurt', 'Biryani Spices', 'Fried Onions'],
     per100g: { calories: 195, protein: 9.5, carbs: 22.0, fat: 8.0, fiber: 1.2 },
   },
@@ -298,7 +298,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     servingUnits: [
       { label: 'Paratha (100g)', grams: 100 },
       { label: 'Large Paratha (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2, 3],
@@ -312,8 +312,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Grains, Roti & Rice',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Bowl / Plate (200g)', grams: 200 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [150, 200, 250],
@@ -329,7 +329,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Protein & Meat',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Grams (raw/dry weight)', grams: 1 },
+      { label: 'Grams (raw weight)', grams: 1 },
       { label: 'Standard Serving (50g raw)', grams: 50 },
       { label: 'Cooked Bowl (150g)', grams: 150 },
       { label: 'Small Bowl (100g)', grams: 100 },
@@ -347,7 +347,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     portionType: 'count',
     servingUnits: [
       { label: 'Piece / Egg (50g)', grams: 50 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2, 3, 4, 6],
@@ -362,7 +362,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     portionType: 'count',
     servingUnits: [
       { label: 'Piece / White (33g)', grams: 33 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [2, 3, 4, 5, 6],
@@ -371,14 +371,14 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
   },
   {
     id: 'egg_omelet',
-    name: 'Egg Omelette / Bhurji (2 Eggs with Onion & Chilli)',
+    name: 'Egg Omelette / Bhurji',
     aliases: ['omelet', 'omelette', 'egg bhurji', 'anda bhurji', 'fried egg', 'scrambled egg'],
     category: 'Protein & Meat',
     portionType: 'count',
     servingUnits: [
       { label: '2-Egg Omelette (120g)', grams: 120 },
       { label: '1-Egg Omelette (60g)', grams: 60 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2],
@@ -392,7 +392,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Protein & Meat',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Medium Breast (150g)', grams: 150 },
       { label: 'Small Breast (100g)', grams: 100 },
       { label: 'Large Breast (200g)', grams: 200 },
@@ -409,7 +409,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Protein & Meat',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
       { label: 'Large Plate (250g)', grams: 250 },
     ],
@@ -425,7 +425,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Protein & Meat',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
       { label: '1 Piece with Gravy (120g)', grams: 120 },
       { label: '2 Pieces with Gravy (220g)', grams: 220 },
     ],
@@ -443,7 +443,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dairy & Vegetarian',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Standard Block (100g)', grams: 100 },
       { label: 'Small Portion (50g)', grams: 50 },
     ],
@@ -459,8 +459,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dairy & Vegetarian',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [100, 150, 200],
@@ -474,7 +474,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Dairy & Vegetarian',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Katori / Bowl (100g)', grams: 100 },
       { label: 'Cup (150g)', grams: 150 },
     ],
@@ -485,7 +485,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
   },
   {
     id: 'chaas_buttermilk',
-    name: 'Chaas / Buttermilk (Plain / Spiced)',
+    name: 'Chaas / Buttermilk',
     aliases: ['chaas', 'buttermilk', 'chach', 'matha', 'mattha', 'masala chaas'],
     category: 'Dairy & Vegetarian',
     portionType: 'volume',
@@ -494,7 +494,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
       { label: 'Milliliters (ml)', grams: 1 },
     ],
     defaultUnitIndex: 0,
-    quickPortions: [200, 250, 300],
+    quickPortions: [1, 2],
     ingredients: ['Diluted Curd', 'Roasted Cumin', 'Mint', 'Black Salt', 'Water'],
     per100g: { calories: 28, protein: 1.8, carbs: 2.6, fat: 1.1, fiber: 0 },
   },
@@ -510,7 +510,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
       { label: 'Milliliters (ml)', grams: 1 },
     ],
     defaultUnitIndex: 0,
-    quickPortions: [150, 200, 250, 300],
+    quickPortions: [1, 2],
     ingredients: ['Pasteurized Toned Milk (Calcium, Vitamin D, Casein Protein)'],
     per100g: { calories: 58, protein: 3.2, carbs: 4.8, fat: 3.0, fiber: 0 },
   },
@@ -518,13 +518,13 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
   // â”€â”€â”€ Breakfast & Snacks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'oats_cooked',
-    name: 'Rolled Oats (Cooked in Water/Milk)',
+    name: 'Rolled Oats (Raw / Cooked)',
     aliases: ['oats', 'oatmeal', 'rolled oats', 'quaker oats', 'masala oats', 'oat'],
     category: 'Breakfast & Snacks',
     portionType: 'weight',
     servingUnits: [
-      { label: 'Grams (dry oats)', grams: 1 },
-      { label: 'Standard Scoop / Serving (40g dry)', grams: 40 },
+      { label: 'Grams (raw dry weight)', grams: 1 },
+      { label: 'Standard Scoop (40g raw)', grams: 40 },
       { label: 'Cooked Bowl (150g)', grams: 150 },
     ],
     defaultUnitIndex: 0,
@@ -539,8 +539,8 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Breakfast & Snacks',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Standard Plate (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
       { label: 'Small Bowl (100g)', grams: 100 },
     ],
     defaultUnitIndex: 0,
@@ -557,7 +557,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     servingUnits: [
       { label: 'Piece / Idli (35g)', grams: 35 },
       { label: 'Plate of 2 (70g)', grams: 70 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2, 3, 4],
@@ -573,7 +573,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     servingUnits: [
       { label: 'Dosa (80g)', grams: 80 },
       { label: 'Masala Dosa with Potato (150g)', grams: 150 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2],
@@ -587,9 +587,9 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     category: 'Breakfast & Snacks',
     portionType: 'weight',
     servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
       { label: 'Tablespoon (16g)', grams: 16 },
       { label: '2 Tablespoons (32g)', grams: 32 },
-      { label: 'Grams', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [16, 32, 50],
@@ -608,7 +608,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
       { label: 'Medium Banana (110g)', grams: 110 },
       { label: 'Large Banana (140g)', grams: 140 },
       { label: 'Small Banana (80g)', grams: 80 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2, 3],
@@ -624,7 +624,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     servingUnits: [
       { label: 'Medium Apple (150g)', grams: 150 },
       { label: 'Large Apple (200g)', grams: 200 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2],
@@ -640,7 +640,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     servingUnits: [
       { label: 'Handful / 10-12 Nuts (15g)', grams: 15 },
       { label: '20 Nuts (28g)', grams: 28 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2],
@@ -659,7 +659,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
       { label: 'Level Scoop (30g)', grams: 30 },
       { label: '1.5 Scoops (45g)', grams: 45 },
       { label: '2 Scoops (60g)', grams: 60 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2],
@@ -674,7 +674,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     portionType: 'count',
     servingUnits: [
       { label: 'Standard Scoop (5g)', grams: 5 },
-      { label: 'Grams', grams: 1 },
+      { label: 'Grams (g)', grams: 1 },
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2],
