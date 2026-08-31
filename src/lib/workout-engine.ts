@@ -836,29 +836,40 @@ function getDaysPerWeek(level: FitnessLevel): number {
  */
 export function generateWorkoutPlan(
   level: FitnessLevel,
-  goal: Goal,
+  goal: Goal | Goal[] | string | string[],
   equipment: Equipment
 ): WorkoutPlan {
+  const goalArray = Array.isArray(goal) ? goal : [goal];
+  // Determine primary workout emphasis
+  let primaryGoal: Goal = 'maintain';
+  if (goalArray.includes('gain_muscle')) {
+    primaryGoal = 'gain_muscle';
+  } else if (goalArray.includes('lose_weight')) {
+    primaryGoal = 'lose_weight';
+  } else if (goalArray.includes('improve_fitness')) {
+    primaryGoal = 'improve_fitness';
+  }
+
   let schedule: WorkoutDay[];
 
   switch (level) {
     case 'beginner':
-      schedule = buildBeginnerPlan(goal, equipment);
+      schedule = buildBeginnerPlan(primaryGoal, equipment);
       break;
     case 'intermediate':
-      schedule = buildIntermediatePlan(goal, equipment);
+      schedule = buildIntermediatePlan(primaryGoal, equipment);
       break;
     case 'advanced':
-      schedule = buildAdvancedPlan(goal, equipment);
+      schedule = buildAdvancedPlan(primaryGoal, equipment);
       break;
   }
 
   return {
     level,
-    goal,
+    goal: primaryGoal,
     daysPerWeek: getDaysPerWeek(level),
     planType: getPlanType(level),
     schedule,
-    weeklyProgressionNote: getProgressionNote(level, goal),
+    weeklyProgressionNote: getProgressionNote(level, primaryGoal),
   };
 }

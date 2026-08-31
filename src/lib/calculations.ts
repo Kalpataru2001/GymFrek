@@ -109,36 +109,127 @@ export interface MacroResult {
  * @param goal      Fitness goal
  * @param weightKg  Optional body weight used for water calculation
  */
+/**
+ * Returns a human-friendly strategy title for single or combined goals.
+ */
+export function getGoalStrategyLabel(goals: string | string[]): { title: string; description: string; emoji: string } {
+  const list = Array.isArray(goals) ? goals : [goals];
+  const hasLose = list.includes('lose_weight');
+  const hasGain = list.includes('gain_muscle');
+  const hasFitness = list.includes('improve_fitness');
+  const hasMaintain = list.includes('maintain');
+
+  if (hasLose && hasGain) {
+    return {
+      title: 'Body Recomposition',
+      description: 'Burn fat while building lean muscle with high protein & slight deficit',
+      emoji: '⚡',
+    };
+  }
+  if (hasGain && hasFitness) {
+    return {
+      title: 'Athletic Hypertrophy',
+      description: 'Build muscle size and power while maximizing endurance and agility',
+      emoji: '🚀',
+    };
+  }
+  if (hasLose && hasFitness) {
+    return {
+      title: 'Fat Loss & Conditioning',
+      description: 'Drop body fat, boost cardiovascular endurance, and improve stamina',
+      emoji: '🔥',
+    };
+  }
+  if (hasGain) {
+    return {
+      title: 'Muscle Growth (Lean Bulk)',
+      description: 'Calorie surplus with high protein to maximize hypertrophy',
+      emoji: '💪',
+    };
+  }
+  if (hasLose) {
+    return {
+      title: 'Fat Loss & Cutting',
+      description: 'Controlled calorie deficit to shed body fat while preserving muscle',
+      emoji: '🔥',
+    };
+  }
+  if (hasFitness) {
+    return {
+      title: 'Functional Fitness & Stamina',
+      description: 'Optimized energy for performance, mobility, and cardiovascular health',
+      emoji: '🏃',
+    };
+  }
+  return {
+    title: 'Weight & Health Maintenance',
+    description: 'Maintain body composition with balanced nutrition',
+    emoji: '⚖️',
+  };
+}
+
+/**
+ * Calculates daily macro targets based on TDEE and single or multiple goals.
+ *
+ * Multi-goal intelligent strategies:
+ *  - lose_weight + gain_muscle : Body Recomp (−250 kcal deficit, 38% protein, 37% carbs, 25% fat)
+ *  - gain_muscle + improve_fitness : Athletic Build (+250 kcal surplus, 30% protein, 45% carbs, 25% fat)
+ *  - lose_weight + improve_fitness : Conditioning Deficit (−400 kcal deficit, 35% protein, 40% carbs, 25% fat)
+ *  - lose_weight : Deficit (−500 kcal, 35% protein, 35% carbs, 30% fat)
+ *  - gain_muscle : Surplus (+300 kcal, 30% protein, 45% carbs, 25% fat)
+ *  - maintain / improve_fitness : Balanced (TDEE, 30% protein, 40% carbs, 30% fat)
+ */
 export function calculateMacros(
   tdee: number,
-  goal: 'lose_weight' | 'maintain' | 'gain_muscle' | 'improve_fitness',
+  goal: string | string[],
   weightKg?: number
 ): MacroResult {
+  const list = Array.isArray(goal) ? goal : [goal];
+  const hasLose = list.includes('lose_weight');
+  const hasGain = list.includes('gain_muscle');
+  const hasFitness = list.includes('improve_fitness');
+
   let targetCalories: number;
   let proteinPct: number;
   let fatPct: number;
   let carbPct: number;
 
-  switch (goal) {
-    case 'lose_weight':
-      targetCalories = tdee - 500;
-      proteinPct = 0.35;
-      fatPct = 0.30;
-      carbPct = 0.35;
-      break;
-    case 'gain_muscle':
-      targetCalories = tdee + 300;
-      proteinPct = 0.30;
-      fatPct = 0.25;
-      carbPct = 0.45;
-      break;
-    case 'maintain':
-    default:
-      targetCalories = tdee;
-      proteinPct = 0.30;
-      fatPct = 0.30;
-      carbPct = 0.40;
-      break;
+  if (hasLose && hasGain) {
+    // Body Recomposition
+    targetCalories = tdee - 250;
+    proteinPct = 0.38;
+    fatPct = 0.25;
+    carbPct = 0.37;
+  } else if (hasGain && hasFitness) {
+    // Athletic Hypertrophy
+    targetCalories = tdee + 250;
+    proteinPct = 0.30;
+    fatPct = 0.25;
+    carbPct = 0.45;
+  } else if (hasLose && hasFitness) {
+    // Fat Loss + Conditioning
+    targetCalories = tdee - 400;
+    proteinPct = 0.35;
+    fatPct = 0.25;
+    carbPct = 0.40;
+  } else if (hasLose) {
+    // Pure Fat Loss
+    targetCalories = tdee - 500;
+    proteinPct = 0.35;
+    fatPct = 0.30;
+    carbPct = 0.35;
+  } else if (hasGain) {
+    // Pure Hypertrophy
+    targetCalories = tdee + 300;
+    proteinPct = 0.30;
+    fatPct = 0.25;
+    carbPct = 0.45;
+  } else {
+    // Maintain / General Fitness
+    targetCalories = tdee;
+    proteinPct = 0.30;
+    fatPct = 0.30;
+    carbPct = 0.40;
   }
 
   // Enforce a safe calorie floor
@@ -149,12 +240,13 @@ export function calculateMacros(
   const fat = Math.round((targetCalories * fatPct) / 9);
   const carbs = Math.round((targetCalories * carbPct) / 4);
 
-  // Fiber: ~14g per 1000 kcal, clamped between 25g and 38g
+  // Fiber: ~14g per 1000 kcal, clamped between 25g and 45g
   const rawFiber = Math.round((targetCalories / 1000) * 14);
-  const fiber = Math.min(Math.max(rawFiber, 25), 38);
+  const fiber = Math.min(Math.max(rawFiber, 25), 45);
 
-  // Water: 35ml/kg body weight; default 2500ml
-  const water = weightKg ? Math.round(weightKg * 35) : 2500;
+  // Water: 35ml/kg body weight (or 38ml for high protein / athletes); default 2500ml
+  const waterMultiplier = (hasGain || hasFitness) ? 38 : 35;
+  const water = weightKg ? Math.round(weightKg * waterMultiplier) : 2500;
 
   return { calories: targetCalories, protein, carbs, fat, fiber, water };
 }

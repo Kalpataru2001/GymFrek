@@ -30,6 +30,7 @@ export interface UserProfile {
   // Fitness
   fitnessLevel?: FitnessLevel;
   goal?: UserGoal;
+  goals?: UserGoal[];
   equipment?: Equipment;
   activityLevel?: ActivityLevel;
 

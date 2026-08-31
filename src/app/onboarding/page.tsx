@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { calculateBMI, calculateBMR, calculateTDEE, calculateMacros } from '@/lib/calculations';
+import { calculateBMI, calculateBMR, calculateTDEE, calculateMacros, getGoalStrategyLabel } from '@/lib/calculations';
 import type { Gender, ActivityLevel, FitnessLevel, Equipment, UserGoal } from '@/lib/types';
+import { Check } from 'lucide-react';
 
 const TOTAL_STEPS = 4;
 
@@ -14,7 +15,7 @@ interface FormState {
   heightCm: number;
   weightKg: number;
   fitnessLevel: FitnessLevel;
-  goal: UserGoal;
+  goals: UserGoal[];
   equipment: Equipment;
   activityLevel: ActivityLevel;
 }
@@ -25,7 +26,7 @@ const DEFAULTS: FormState = {
   heightCm: 170,
   weightKg: 70,
   fitnessLevel: 'beginner',
-  goal: 'maintain',
+  goals: ['maintain'],
   equipment: 'full_gym',
   activityLevel: 'moderate',
 };
@@ -41,17 +42,37 @@ export default function OnboardingPage() {
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm(prev => ({ ...prev, [key]: val }));
 
+  const toggleGoal = (val: UserGoal) => {
+    setForm(prev => {
+      const exists = prev.goals.includes(val);
+      if (exists) {
+        // Keep at least one goal
+        if (prev.goals.length === 1) return prev;
+        return { ...prev, goals: prev.goals.filter(g => g !== val) };
+      } else {
+        // If selecting maintain, or selecting another while maintain is selected:
+        if (val === 'maintain') {
+          return { ...prev, goals: ['maintain'] };
+        }
+        const filtered = prev.goals.filter(g => g !== 'maintain');
+        return { ...prev, goals: [...filtered, val] };
+      }
+    });
+  };
+
   const next = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
   const back = () => setStep(s => Math.max(s - 1, 1));
 
   const preview = (() => {
-    if (!form.age || !form.heightCm || !form.weightKg) return null;
+    if (!form.age || !form.heightCm || !form.weightKg || form.goals.length === 0) return null;
     const { bmi, category } = calculateBMI(form.weightKg, form.heightCm);
     const bmr = calculateBMR(form.weightKg, form.heightCm, form.age, form.gender === 'other' ? 'male' : form.gender);
     const tdee = calculateTDEE(bmr, form.activityLevel);
-    const macros = calculateMacros(tdee, form.goal, form.weightKg);
+    const macros = calculateMacros(tdee, form.goals, form.weightKg);
     return { bmi, category, bmr, tdee, macros };
   })();
+
+  const strategy = getGoalStrategyLabel(form.goals);
 
   const handleSubmit = async () => {
     if (!user || !preview) return;
@@ -60,9 +81,11 @@ export default function OnboardingPage() {
     const { bmi, category } = calculateBMI(form.weightKg, form.heightCm);
     const bmr = calculateBMR(form.weightKg, form.heightCm, form.age, gender);
     const tdee = calculateTDEE(bmr, form.activityLevel);
-    const macros = calculateMacros(tdee, form.goal, form.weightKg);
+    const macros = calculateMacros(tdee, form.goals, form.weightKg);
     await updateProfile({
       ...form,
+      goal: form.goals[0],
+      goals: form.goals,
       bmi,
       bmiCategory: category,
       bmr,
@@ -78,7 +101,7 @@ export default function OnboardingPage() {
   const pct = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
 
   const selCard = (active: boolean) =>
-    `border-2 rounded-xl p-4 cursor-pointer transition-all ${active ? 'border-orange-500 bg-orange-500/10' : 'border-gray-700 bg-gray-800 hover:border-gray-600'}`;
+    `relative border-2 rounded-xl p-4 cursor-pointer transition-all ${active ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/10' : 'border-gray-700 bg-gray-800 hover:border-gray-600'}`;
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 py-12">
@@ -150,28 +173,65 @@ export default function OnboardingPage() {
                       <p className="text-sm text-gray-400">{opt.desc}</p>
                     </div>
                   </div>
+                  {form.fitnessLevel === opt.val && (
+                    <div className="absolute top-3 right-3 bg-orange-500 text-white rounded-full p-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
 
-          {/* ── Step 3: Goal ── */}
+          {/* ── Step 3: Goal (Multi-Select) ── */}
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-white">Your Goal</h2>
+              <div>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-white">Your Goal</h2>
+                  <span className="text-xs bg-orange-500/20 text-orange-400 font-medium px-2.5 py-1 rounded-full">
+                    Select 1 or more
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Choose any combination that fits your fitness aspirations</p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 {([
-                  { val: 'lose_weight', label: 'Lose Weight', icon: '🔥' },
-                  { val: 'maintain', label: 'Maintain', icon: '⚖️' },
-                  { val: 'gain_muscle', label: 'Gain Muscle', icon: '💪' },
-                  { val: 'improve_fitness', label: 'Improve Fitness', icon: '🏃' },
-                ] as { val: UserGoal; label: string; icon: string }[]).map(opt => (
-                  <div key={opt.val} onClick={() => set('goal', opt.val)}
-                    className={selCard(form.goal === opt.val) + ' text-center'}>
-                    <div className="text-3xl mb-2">{opt.icon}</div>
-                    <p className="font-semibold text-white text-sm">{opt.label}</p>
+                  { val: 'lose_weight', label: 'Lose Weight', icon: '🔥', hint: 'Burn fat & get lean' },
+                  { val: 'maintain', label: 'Maintain', icon: '⚖️', hint: 'Keep current weight' },
+                  { val: 'gain_muscle', label: 'Gain Muscle', icon: '💪', hint: 'Build strength & size' },
+                  { val: 'improve_fitness', label: 'Improve Fitness', icon: '🏃', hint: 'Stamina & endurance' },
+                ] as { val: UserGoal; label: string; icon: string; hint: string }[]).map(opt => {
+                  const isSelected = form.goals.includes(opt.val);
+                  return (
+                    <div
+                      key={opt.val}
+                      onClick={() => toggleGoal(opt.val)}
+                      className={selCard(isSelected) + ' text-center select-none'}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-2.5 right-2.5 bg-orange-500 text-white rounded-full p-0.5">
+                          <Check className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                      <div className="text-3xl mb-1.5">{opt.icon}</div>
+                      <p className="font-semibold text-white text-sm">{opt.label}</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{opt.hint}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Dynamic Goal Strategy Banner */}
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3.5 mt-4">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl">{strategy.emoji}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-orange-400">{strategy.title}</p>
+                    <p className="text-xs text-gray-300 mt-0.5">{strategy.description}</p>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           )}
@@ -190,6 +250,11 @@ export default function OnboardingPage() {
                   <div key={opt.val} onClick={() => set('equipment', opt.val)} className={selCard(form.equipment === opt.val) + ' mb-2'}>
                     <p className="font-medium text-white">{opt.label}</p>
                     <p className="text-xs text-gray-400">{opt.desc}</p>
+                    {form.equipment === opt.val && (
+                      <div className="absolute top-3 right-3 bg-orange-500 text-white rounded-full p-0.5">
+                        <Check className="w-3.5 h-3.5" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -212,13 +277,18 @@ export default function OnboardingPage() {
               {/* Preview */}
               {preview && (
                 <div className="bg-gray-700/50 rounded-xl p-4 space-y-3">
-                  <p className="text-sm font-semibold text-orange-400">📊 Your Calculated Stats</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-orange-400">📊 Your Personalized Target Plan</p>
+                    <span className="text-xs text-orange-300 bg-orange-500/20 px-2 py-0.5 rounded font-medium">
+                      {strategy.title}
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: 'BMI', value: preview.bmi.toFixed(1), sub: preview.category },
                       { label: 'BMR', value: preview.bmr, sub: 'kcal/day at rest' },
-                      { label: 'TDEE', value: preview.tdee, sub: 'total daily calories' },
-                      { label: 'Daily Target', value: preview.macros.calories, sub: 'kcal for your goal' },
+                      { label: 'TDEE', value: preview.tdee, sub: 'maintenance calories' },
+                      { label: 'Daily Target', value: preview.macros.calories, sub: 'custom goal calories' },
                     ].map(s => (
                       <div key={s.label} className="bg-gray-700 rounded-lg p-3 text-center">
                         <p className="text-xs text-gray-400">{s.label}</p>
@@ -245,7 +315,8 @@ export default function OnboardingPage() {
               </button>
             )}
             {step < TOTAL_STEPS ? (
-              <button onClick={next} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg transition-colors">
+              <button onClick={next} disabled={step === 3 && form.goals.length === 0}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors">
                 Next →
               </button>
             ) : (

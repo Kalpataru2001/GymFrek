@@ -1,13 +1,14 @@
-'use client';
-import { useState } from 'react';
+﻿'use client';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
-import { calculateBMI, calculateBMR, calculateTDEE, calculateMacros, getBMIColor } from '@/lib/calculations';
+import { calculateBMI, calculateBMR, calculateTDEE, calculateMacros, getBMIColor, getGoalStrategyLabel } from '@/lib/calculations';
 import type { ActivityLevel, UserGoal } from '@/lib/types';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Toast from '@/components/ui/Toast';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Check } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -15,18 +16,63 @@ export default function ProfilePage() {
   const [toast, setToast] = useState<{message:string;type:'success'|'error'|'info'}|null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    age: profile?.age ?? 25, heightCm: profile?.heightCm ?? 170, weightKg: profile?.weightKg ?? 70,
-    activityLevel: profile?.activityLevel ?? 'moderate', goal: profile?.goal ?? 'maintain',
+    age: 25,
+    heightCm: 170,
+    weightKg: 70,
+    activityLevel: 'moderate' as ActivityLevel,
+    goals: ['maintain'] as UserGoal[],
   });
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        age: profile.age ?? 25,
+        heightCm: profile.heightCm ?? 170,
+        weightKg: profile.weightKg ?? 70,
+        activityLevel: (profile.activityLevel ?? 'moderate') as ActivityLevel,
+        goals: (profile.goals && profile.goals.length > 0)
+          ? profile.goals
+          : (profile.goal ? [profile.goal] : ['maintain']),
+      });
+    }
+  }, [profile]);
+
+  const toggleGoal = (val: UserGoal) => {
+    setForm(prev => {
+      const exists = prev.goals.includes(val);
+      if (exists) {
+        if (prev.goals.length === 1) return prev;
+        return { ...prev, goals: prev.goals.filter(g => g !== val) };
+      } else {
+        if (val === 'maintain') return { ...prev, goals: ['maintain'] };
+        const filtered = prev.goals.filter(g => g !== 'maintain');
+        return { ...prev, goals: [...filtered, val] };
+      }
+    });
+  };
+
+  const strategy = getGoalStrategyLabel(form.goals);
 
   const recalculate = async () => {
     setSaving(true);
     const gender = (profile?.gender || 'male') as 'male'|'female';
     const {bmi, category} = calculateBMI(form.weightKg, form.heightCm);
     const bmr = calculateBMR(form.weightKg, form.heightCm, form.age, gender);
-    const tdee = calculateTDEE(bmr, form.activityLevel as ActivityLevel);
-    const macros = calculateMacros(tdee, form.goal as UserGoal, form.weightKg);
-    await updateProfile({...form, bmi, bmiCategory: category, bmr, tdee, macros});
+    const tdee = calculateTDEE(bmr, form.activityLevel);
+    const macros = calculateMacros(tdee, form.goals, form.weightKg);
+    await updateProfile({
+      age: form.age,
+      heightCm: form.heightCm,
+      weightKg: form.weightKg,
+      activityLevel: form.activityLevel,
+      goal: form.goals[0],
+      goals: form.goals,
+      bmi,
+      bmiCategory: category,
+      bmr,
+      tdee,
+      macros,
+    });
     setToast({message:'Profile updated & stats recalculated!', type:'success'});
     setSaving(false);
   };
@@ -53,7 +99,11 @@ export default function ProfilePage() {
         <div>
           <h2 className="text-xl font-semibold text-white">{user?.displayName || 'User'}</h2>
           <p className="text-gray-400">{user?.email}</p>
-          <p className="text-xs text-gray-500 mt-1">Member since {user?.metadata.creationTime?.slice(0,16)}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs bg-orange-500/20 text-orange-400 font-semibold px-2.5 py-1 rounded-full">
+              {strategy.emoji} {strategy.title}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -76,8 +126,8 @@ export default function ProfilePage() {
       )}
 
       {/* Edit form */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-white">Update Body Metrics</h3>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-5">
+        <h3 className="text-lg font-semibold text-white">Update Body Metrics & Goals</h3>
         <div className="grid grid-cols-2 gap-4">
           {[{label:'Age',key:'age',min:13,max:100},{label:'Height (cm)',key:'heightCm',min:100,max:250},{label:'Weight (kg)',key:'weightKg',min:20,max:300}].map(f=>(
             <div key={f.key}>
@@ -96,17 +146,46 @@ export default function ProfilePage() {
               ))}
             </select>
           </div>
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Goal</label>
-            <select value={form.goal} onChange={e=>setForm(p=>({...p, goal: e.target.value as UserGoal}))}
-              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500">
-              {[['lose_weight','Lose Weight'],['maintain','Maintain'],['gain_muscle','Gain Muscle'],['improve_fitness','Improve Fitness']].map(([v,l])=>(
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
+
+          {/* Goals Multi-Select */}
+          <div className="col-span-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-300">Fitness Goals</label>
+              <span className="text-xs text-gray-400">Select any combination</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {([
+                { val: 'lose_weight', label: '🔥 Lose Weight' },
+                { val: 'maintain', label: '⚖️ Maintain' },
+                { val: 'gain_muscle', label: '💪 Gain Muscle' },
+                { val: 'improve_fitness', label: '🏃 Improve Fitness' },
+              ] as { val: UserGoal; label: string }[]).map(g => {
+                const isSelected = form.goals.includes(g.val);
+                return (
+                  <button
+                    key={g.val}
+                    type="button"
+                    onClick={() => toggleGoal(g.val)}
+                    className={`flex items-center justify-between p-3 rounded-lg text-sm font-medium border transition-all ${
+                      isSelected
+                        ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                        : 'bg-gray-700/60 border-gray-600 text-gray-300 hover:border-gray-500'
+                    }`}
+                  >
+                    <span>{g.label}</span>
+                    {isSelected && <Check className="w-4 h-4 text-orange-400" />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="bg-gray-700/40 rounded-lg p-2.5 text-xs text-gray-300 flex items-center gap-2">
+              <span>{strategy.emoji}</span>
+              <span><strong>{strategy.title}:</strong> {strategy.description}</span>
+            </div>
           </div>
         </div>
-        <button onClick={recalculate} disabled={saving} className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors">
+
+        <button onClick={recalculate} disabled={saving || form.goals.length === 0} className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors">
           {saving ? 'Saving...' : '🔄 Save & Recalculate Stats'}
         </button>
       </div>
