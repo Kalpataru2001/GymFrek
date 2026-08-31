@@ -22,6 +22,7 @@ import {
   HeartPulse,
   Target,
   Shield,
+  RefreshCw,
 } from 'lucide-react';
 
 interface EditExerciseModalProps {
@@ -50,6 +51,8 @@ export default function EditExerciseModal({
   const [rest, setRest] = useState('60s');
   const [instructions, setInstructions] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [alternativeVideos, setAlternativeVideos] = useState<string[]>([]);
+  const [videoCycleIndex, setVideoCycleIndex] = useState(0);
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewVideo, setPreviewVideo] = useState(false);
@@ -64,6 +67,7 @@ export default function EditExerciseModal({
       setRest(initialExercise.rest || '60s');
       setInstructions(initialExercise.instructions || '');
       setVideoUrl(initialExercise.videoUrl || '');
+      setAlternativeVideos(initialExercise.alternativeVideos || (initialExercise.videoUrl ? [initialExercise.videoUrl] : []));
       setDifficulty(initialExercise.difficulty || 'intermediate');
       setSearchQuery('');
     } else {
@@ -74,9 +78,11 @@ export default function EditExerciseModal({
       setRest('60s');
       setInstructions('');
       setVideoUrl('');
+      setAlternativeVideos([]);
       setDifficulty('intermediate');
       setSearchQuery('');
     }
+    setVideoCycleIndex(0);
     setPreviewVideo(false);
   }, [initialExercise, isOpen]);
 
@@ -105,6 +111,8 @@ export default function EditExerciseModal({
     setRest(exItem.rest);
     setInstructions(exItem.instructions);
     setVideoUrl(exItem.videoUrl || '');
+    setAlternativeVideos(exItem.alternativeVideos || (exItem.videoUrl ? [exItem.videoUrl] : []));
+    setVideoCycleIndex(0);
     setDifficulty(exItem.difficulty);
     setSearchQuery('');
   };
@@ -112,11 +120,29 @@ export default function EditExerciseModal({
   // Handle typing custom name and auto-matching video + instructions
   const handleNameChange = (val: string) => {
     setName(val);
-    const matched = findExerciseVideo(val);
+    const matched = findExerciseVideo(val, 0);
     if (matched) {
       if (matched.videoUrl) setVideoUrl(matched.videoUrl);
+      if (matched.alternativeVideos) setAlternativeVideos(matched.alternativeVideos);
       if (matched.muscleGroup && (muscleGroup === 'Chest' || !muscleGroup)) setMuscleGroup(matched.muscleGroup);
       if (matched.instructions && !instructions) setInstructions(matched.instructions);
+    }
+  };
+
+  // Auto-match video button with cyclic re-matching
+  const handleAutoMatchVideo = (customTargetName?: string) => {
+    const target = (customTargetName || name).trim();
+    if (!target) return;
+    const nextIdx = videoCycleIndex + 1;
+    setVideoCycleIndex(nextIdx);
+
+    const matched = findExerciseVideo(target, nextIdx);
+    if (matched) {
+      if (matched.videoUrl) setVideoUrl(matched.videoUrl);
+      if (matched.alternativeVideos) setAlternativeVideos(matched.alternativeVideos);
+      if (matched.muscleGroup) setMuscleGroup(matched.muscleGroup);
+      if (matched.instructions) setInstructions(matched.instructions);
+      setPreviewVideo(true); // Open preview to verify video works immediately
     }
   };
 
@@ -134,19 +160,21 @@ export default function EditExerciseModal({
       const data = await res.json();
       if (data.success && data.exercise) {
         const ex = data.exercise;
+        const matched = findExerciseVideo(q, 0);
         setName(ex.name);
         setMuscleGroup(ex.muscleGroup);
         setSets(ex.sets || 3);
         setReps(ex.reps || '10-12');
         setRest(ex.rest || '60s');
         setInstructions(ex.instructions);
-        setVideoUrl(ex.videoUrl || 'xUm0BiKGcwE');
+        setVideoUrl(matched?.videoUrl || ex.videoUrl || 'xUm0BiKGcwE');
+        setAlternativeVideos(matched?.alternativeVideos || [matched?.videoUrl || 'xUm0BiKGcwE']);
         setDifficulty(ex.difficulty || 'beginner');
         setSearchQuery('');
+        setPreviewVideo(true);
       }
     } catch (e) {
       console.error('AI exercise generator error:', e);
-      // Fallback
       handleNameChange(q);
     } finally {
       setAiLoading(false);
@@ -157,7 +185,7 @@ export default function EditExerciseModal({
     e.preventDefault();
     if (!name.trim()) return;
 
-    const matched = findExerciseVideo(name);
+    const matched = findExerciseVideo(name, videoCycleIndex);
 
     const savedExercise: Exercise = {
       name: name.trim(),
@@ -168,6 +196,7 @@ export default function EditExerciseModal({
       instructions: instructions.trim() || `Perform ${name.trim()} with controlled form, proper breathing, and steady cadence.`,
       difficulty,
       videoUrl: cleanYouTubeId || videoUrl.trim() || (matched?.videoUrl || 'xUm0BiKGcwE'),
+      alternativeVideos: alternativeVideos.length > 0 ? alternativeVideos : [cleanYouTubeId || videoUrl.trim() || 'xUm0BiKGcwE'],
       targetMuscles: matched?.targetMuscles || [muscleGroup],
       equipment: matched?.equipment || 'Gym Equipment',
       tips: matched?.tips || ['Focus on controlled tempo and full range of motion.'],
@@ -186,7 +215,6 @@ export default function EditExerciseModal({
     return allLibraryExercises.filter(e => {
       const exName = e.name.toLowerCase();
       const exMuscle = e.muscleGroup.toLowerCase();
-      // Match exact query or match all tokens
       if (exName.includes(q) || exMuscle.includes(q)) return true;
       return tokens.every(t => exName.includes(t) || exMuscle.includes(t));
     });
@@ -212,14 +240,14 @@ export default function EditExerciseModal({
           <div className="relative">
             <input
               type="text"
-              placeholder="Search exercise (e.g. Machine Chest Press, Stretching, Squat, Lat Pulldown, Warmup)..."
+              placeholder="Search exercise (e.g. Machine Chest Press, Stretching, Leg Press, Lat Pulldown)..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500"
             />
           </div>
 
-          {/* Quick Category Chips with Lucide Icons (Zero Mojibake) */}
+          {/* Quick Category Chips with Lucide Icons */}
           <div className="flex flex-wrap gap-1.5 pt-0.5">
             {[
               { label: 'Stretching', q: 'stretching', Icon: Activity },
@@ -298,29 +326,41 @@ export default function EditExerciseModal({
             <label className="block text-xs font-medium text-gray-300">
               Exercise Name <span className="text-red-400">*</span>
             </label>
-            <button
-              type="button"
-              onClick={() => handleGenerateWithAI(name)}
-              disabled={aiLoading || !name.trim()}
-              className="text-[11px] text-purple-400 hover:text-purple-300 disabled:opacity-50 flex items-center gap-1 font-semibold"
-            >
-              {aiLoading ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Searching with AI...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3 h-3" />
-                  AI Auto-match video demo
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleAutoMatchVideo()}
+                className="text-[11px] text-orange-400 hover:text-orange-300 flex items-center gap-1 font-semibold"
+                title="Click to cycle through different matching video tutorials"
+              >
+                <RefreshCw className="w-3 h-3" />
+                {videoCycleIndex > 0 ? `Switch Video (${(videoCycleIndex % 4) + 1}/4)` : 'Auto-match video'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleGenerateWithAI(name)}
+                disabled={aiLoading || !name.trim()}
+                className="text-[11px] text-purple-400 hover:text-purple-300 disabled:opacity-50 flex items-center gap-1 font-semibold"
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3" />
+                    AI Auto-Match
+                  </>
+                )}
+              </button>
+            </div>
           </div>
           <input
             type="text"
             required
-            placeholder="e.g. Machine Chest Press, Incline Bench Press, Full Body Stretching"
+            placeholder="e.g. Machine Chest Press, Incline Bench Press, Leg Extension"
             value={name}
             onChange={e => handleNameChange(e.target.value)}
             className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500 font-medium"
@@ -368,6 +408,38 @@ export default function EditExerciseModal({
               className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg text-xs focus:outline-none focus:border-orange-500 font-mono text-[11px]"
             />
           </div>
+
+          {/* Alternative Video Quick Selector Pills */}
+          {alternativeVideos.length > 1 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <span className="text-[10px] text-gray-400 font-medium">Alternative Videos:</span>
+              {alternativeVideos.map((vidId, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setVideoUrl(vidId);
+                    setPreviewVideo(true);
+                  }}
+                  className={`text-[10px] px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
+                    cleanYouTubeId === vidId
+                      ? 'bg-orange-500 text-white font-bold'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                  }`}
+                >
+                  <Play className="w-2.5 h-2.5 fill-current" />
+                  <span>Video #{i + 1}</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleAutoMatchVideo()}
+                className="text-[10px] text-orange-400 hover:text-orange-300 flex items-center gap-0.5 ml-1"
+              >
+                <RefreshCw className="w-2.5 h-2.5" /> Try Next
+              </button>
+            </div>
+          )}
 
           {previewVideo && cleanYouTubeId && (
             <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border border-gray-600 shadow-md">

@@ -1,6 +1,7 @@
 ﻿'use client';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Exercise } from '@/lib/workout-engine';
+import { findExerciseVideo } from '@/lib/workout-engine';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import {
@@ -15,6 +16,7 @@ import {
   Clock,
   Repeat,
   Layers,
+  RefreshCw,
 } from 'lucide-react';
 
 interface ExerciseVisualModalProps {
@@ -30,23 +32,53 @@ const diffColor: Record<string, 'green' | 'yellow' | 'red' | 'gray'> = {
 };
 
 export default function ExerciseVisualModal({ exercise, isOpen, onClose }: ExerciseVisualModalProps) {
-  const [activeTab, setActiveTab] = useState<'video' | 'instructions'>('video');
-
-  if (!exercise) return null;
+  const [currentVideoIdx, setCurrentVideoIdx] = useState(0);
 
   // Extract YouTube ID if full URL or ID is passed
   const getYouTubeId = (url?: string) => {
     if (!url) return null;
-    if (url.includes('youtube.com/watch?v=')) {
-      return url.split('v=')[1]?.split('&')[0];
+    const clean = url.trim();
+    if (clean.includes('youtube.com/watch?v=')) {
+      return clean.split('v=')[1]?.split('&')[0];
     }
-    if (url.includes('youtu.be/')) {
-      return url.split('youtu.be/')[1]?.split('?')[0];
+    if (clean.includes('youtu.be/')) {
+      return clean.split('youtu.be/')[1]?.split('?')[0];
     }
-    return url;
+    if (clean.includes('youtube.com/embed/')) {
+      return clean.split('embed/')[1]?.split('?')[0];
+    }
+    return clean;
   };
 
-  const videoId = getYouTubeId(exercise.videoUrl);
+  useEffect(() => {
+    setCurrentVideoIdx(0);
+  }, [exercise, isOpen]);
+
+  if (!exercise) return null;
+
+  // Retrieve alternatives from exercise object or lookup from engine
+  const matchedData = findExerciseVideo(exercise.name, 0);
+  const videoList: string[] = useMemo(() => {
+    const list: string[] = [];
+    if (exercise.videoUrl) list.push(exercise.videoUrl);
+    if (exercise.alternativeVideos) {
+      exercise.alternativeVideos.forEach(v => {
+        if (!list.includes(v)) list.push(v);
+      });
+    }
+    if (matchedData?.alternativeVideos) {
+      matchedData.alternativeVideos.forEach(v => {
+        if (!list.includes(v)) list.push(v);
+      });
+    }
+    return list.length > 0 ? list : ['rT7DgCr-3pg'];
+  }, [exercise, matchedData]);
+
+  const activeVideoId = getYouTubeId(videoList[currentVideoIdx % videoList.length]);
+
+  const handleNextVideo = () => {
+    setCurrentVideoIdx(prev => (prev + 1) % videoList.length);
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={exercise.name} size="lg">
@@ -82,26 +114,42 @@ export default function ExerciseVisualModal({ exercise, isOpen, onClose }: Exerc
         </div>
 
         {/* Video Player / Demo Section */}
-        {videoId ? (
+        {activeVideoId ? (
           <div className="space-y-2">
             <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-gray-700 shadow-xl">
               <iframe
-                src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`}
+                key={activeVideoId}
+                src={`https://www.youtube-nocookie.com/embed/${activeVideoId}?autoplay=0&rel=0&modestbranding=1`}
                 title={`${exercise.name} Exercise Video Demonstration`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="flex justify-between items-center text-[11px] text-gray-400 px-1">
-              <span className="flex items-center gap-1 text-orange-400 font-semibold">
-                <Play className="w-3 h-3" /> Form Demonstration Video
-              </span>
+
+            <div className="flex flex-wrap justify-between items-center text-[11px] text-gray-400 px-1 gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-orange-400 font-semibold">
+                  <Play className="w-3 h-3 fill-orange-400" /> Video Demonstration
+                </span>
+
+                {videoList.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleNextVideo}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-300 hover:text-white bg-gray-800 hover:bg-gray-700 border border-gray-600 px-2 py-0.5 rounded transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Try Alternative Video ({(currentVideoIdx % videoList.length) + 1}/{videoList.length})
+                  </button>
+                )}
+              </div>
+
               <a
-                href={`https://www.youtube.com/watch?v=${videoId}`}
+                href={`https://www.youtube.com/watch?v=${activeVideoId}`}
                 target="_blank"
                 rel="noreferrer"
-                className="hover:text-white flex items-center gap-1 transition-colors"
+                className="hover:text-white flex items-center gap-1 transition-colors text-gray-400 font-medium"
               >
                 Watch on YouTube <ExternalLink className="w-3 h-3" />
               </a>
@@ -134,7 +182,7 @@ export default function ExerciseVisualModal({ exercise, isOpen, onClose }: Exerc
                       : 'bg-gray-700 text-gray-300 border-gray-600'
                   }`}
                 >
-                  {muscle} {idx === 0 && 'ðŸ”¥ (Primary)'}
+                  {muscle} {idx === 0 && ' (Primary)'}
                 </span>
               ))}
             </div>

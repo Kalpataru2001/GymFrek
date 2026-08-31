@@ -18,6 +18,7 @@ export interface Exercise {
   instructions: string;
   difficulty: FitnessLevel;
   videoUrl?: string;
+  alternativeVideos?: string[];
   gifUrl?: string;
   targetMuscles?: string[];
   equipment?: string;
@@ -41,6 +42,35 @@ export interface WorkoutPlan {
   weeklyProgressionNote: string;
 }
 
+// â”€â”€â”€ Verified Alternative Videos Database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const EXERCISE_ALTERNATIVE_VIDEOS: Record<string, string[]> = {
+  chest_machine: ['xUm0BiKGcwE', 'rT7DgCr-3pg', 'VmB1G1K7v94', 'Iwe6AmxVf7o'],
+  chest_bench: ['rT7DgCr-3pg', '4Y2ZdHCOXok', 'vcBig73ojpE', 'VmB1G1K7v94'],
+  chest_incline: ['SrqOu55lrYU', '8iPEnn-ltC8', '0G2_kJ7444c', 'SKPab2YC8BE'],
+  chest_fly: ['Iwe6AmxVf7o', 'eozdVDA78K0', 'rr6eFNNDQJE', '2z8JmcrW-As'],
+  chest_dips: ['2z8JmcrW-As', 'Ym_N2K790eU', 'J0DnG1_S92I', '0326dy_-CzM'],
+
+  legs_press: ['IZxyjW7MPJQ', 'CHPHn7v5s5Q', 's9_Jc4U2pG8', 'bEv6CCg2BC8'],
+  legs_extension: ['m0Bg-w0j47Y', '1Tq3QdYUuHs', '8kXWb1tU81Y', 'IZxyjW7MPJQ'],
+  legs_squat: ['bEv6CCg2BC8', 'ultWZbUMPL8', 'MeIiIdhvXT4', 'aclHkVaku9U'],
+  legs_lunge: ['L8fvypPrzzs', '7jA_RkgN3k0', 'wrwwXE_x-pQ', 'bEv6CCg2BC8'],
+
+  back_row: ['GZbfZ033f74', '9efgc2Wg0PQ', '6TSzcG1bZ8I', 'xQNrFHEMhI4'],
+  back_pulldown: ['CAwf7n6Luuc', 'HNb446a8yK0', 'pYcpY20QaE8', 'eGo4IYlbE5g'],
+  back_deadlift: ['_oyxCn2iSjU', 'hCDzSR6bW10', 'op9kVnSso6Q', 'rgn4nN9F0i8'],
+  back_facepull: ['rep-qVOkqgk', 'EA7u4Q_84es', 'cc6UVRS7PW4', 'GZbfZ033f74'],
+
+  shoulder_press: ['2yjwXTZQDDI', 'qEwKCR5JCog', 'B-aVuyhvLHU', 'q8m_iX46q_U'],
+  shoulder_lateral: ['3VcKaXpzqRo', 'PzsMitRdI_8', 'kDqklX1ZESo', '140EXPBNXXU'],
+
+  arms_biceps: ['kwG2ipFRgfo', 'in7PaeYlhrM', 'zC3nLlEvin4', 'ykJmrZ5v0Oo'],
+  arms_triceps: ['vB5OHsJ3EME', '2-LAMcpzODU', '_gsUokN_Abg', '0326dy_-CzM'],
+
+  core_abs: ['hdng3Nm1x_E', 'ASdvN_XEl_c', 'wkD8rjkodUI', '1919eP5nB_E'],
+  stretching: ['L_xrDAtyPqI', 'g_tea8ZNk5A', 'sTxC3J3gQEU', 'eOz1_8LXZHk'],
+  cardio: ['3gK-mYmO6Qk', 'auBLPXO8Fww', 'u3zgHI8QnqE', 'nmwgirgXLYM'],
+};
+
 // â”€â”€â”€ Exercise Database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface ExerciseDB {
@@ -61,7 +91,8 @@ function ex(
   targetMuscles?: string[],
   equipment?: string,
   tips?: string[],
-  commonMistakes?: string[]
+  commonMistakes?: string[],
+  alternativeVideos?: string[]
 ): Exercise {
   return {
     name,
@@ -72,6 +103,7 @@ function ex(
     instructions,
     difficulty,
     videoUrl,
+    alternativeVideos: alternativeVideos || (videoUrl ? [videoUrl] : []),
     targetMuscles: targetMuscles || [muscleGroup],
     equipment: equipment || 'Gym Equipment',
     tips: tips || ['Maintain steady breathing throughout each repetition.', 'Focus on mind-muscle connection and controlled tempo.'],
@@ -93,7 +125,8 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       ['Pectoralis Major', 'Anterior Deltoids', 'Triceps'],
       'Seated Chest Press Machine',
       ['Keep shoulder blades pinned against the back pad throughout the movement.', 'Do not bounce the weight stack at the bottom.'],
-      ['Shrugging shoulders upward during the press.']
+      ['Shrugging shoulders upward during the press.'],
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_machine
     ),
     dumbbells_only: ex(
       'Dumbbell Floor Press', 3, '10-12', '60s', 'Chest',
@@ -101,7 +134,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'uUGDRwge4F8',
       ['Chest', 'Triceps'],
-      'Dumbbells & Floor'
+      'Dumbbells & Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_bench
     ),
     no_equipment: ex(
       'Push-Up with Slow Eccentric', 3, '10-15', '60s', 'Chest',
@@ -109,7 +144,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'IODxDxX7oi4',
       ['Pectoralis Major', 'Core', 'Triceps'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_bench
     ),
   },
 
@@ -120,7 +157,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'rT7DgCr-3pg',
       ['Pectoralis Major', 'Anterior Deltoids', 'Triceps Brachii'],
-      'Barbell & Flat Bench'
+      'Barbell & Flat Bench',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_bench
     ),
     dumbbells_only: ex(
       'Dumbbell Bench Press', 4, '8-12', '75s', 'Chest',
@@ -128,7 +167,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'VmB1G1K7v94',
       ['Pectoralis Major', 'Triceps', 'Shoulders'],
-      'Pair of Dumbbells'
+      'Pair of Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_bench
     ),
     no_equipment: ex(
       'Push-Up', 4, '10-20', '60s', 'Chest',
@@ -136,7 +177,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'IODxDxX7oi4',
       ['Pectoralis Major', 'Core / Abs', 'Triceps'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_bench
     ),
   },
 
@@ -147,7 +190,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'SrqOu55lrYU',
       ['Clavicular Upper Pecs', 'Anterior Deltoids', 'Triceps'],
-      'Barbell & Incline Bench'
+      'Barbell & Incline Bench',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_incline
     ),
     dumbbells_only: ex(
       'Incline Dumbbell Press', 3, '10-12', '75s', 'Upper Chest',
@@ -155,7 +200,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '8iPEnn-ltC8',
       ['Upper Pectorals', 'Front Delts', 'Triceps'],
-      'Incline Bench & Dumbbells'
+      'Incline Bench & Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_incline
     ),
     no_equipment: ex(
       'Decline Push-Up', 3, '10-15', '60s', 'Upper Chest',
@@ -163,7 +210,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'SKPab2YC8BE',
       ['Upper Chest', 'Anterior Delts', 'Triceps'],
-      'Chair or Elevated Surface'
+      'Chair or Elevated Surface',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_incline
     ),
   },
 
@@ -174,7 +223,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'Iwe6AmxVf7o',
       ['Inner & Outer Pectorals', 'Anterior Deltoids'],
-      'Pec Deck Machine / Cables'
+      'Pec Deck Machine / Cables',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_fly
     ),
     dumbbells_only: ex(
       'Dumbbell Chest Fly', 3, '12-15', '60s', 'Chest',
@@ -182,7 +233,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'eozdVDA78K0',
       ['Pectoralis Major', 'Chest Stretch'],
-      'Dumbbells & Bench'
+      'Dumbbells & Bench',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_fly
     ),
     no_equipment: ex(
       'Wide Push-Up', 3, '12-15', '60s', 'Chest',
@@ -190,7 +243,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'rr6eFNNDQJE',
       ['Outer Pectorals', 'Serratus Anterior'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.chest_fly
     ),
   },
 
@@ -204,7 +259,8 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       ['Quadriceps', 'Gluteus Maximus', 'Hamstrings'],
       '45-Degree Leg Press Machine',
       ['Keep lower back pressed firmly into the backrest at all times.'],
-      ['Hyperextending and locking out knees at the top.']
+      ['Hyperextending and locking out knees at the top.'],
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_press
     ),
     dumbbells_only: ex(
       'Dumbbell Goblet Squat', 4, '10-12', '75s', 'Quads / Glutes',
@@ -212,7 +268,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'MeIiIdhvXT4',
       ['Quads', 'Glutes', 'Core'],
-      'Single Heavy Dumbbell'
+      'Single Heavy Dumbbell',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_squat
     ),
     no_equipment: ex(
       'Bodyweight Air Squat', 4, '15-20', '60s', 'Quads / Glutes',
@@ -220,7 +278,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'aclHkVaku9U',
       ['Quadriceps', 'Glutes', 'Hamstrings'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_squat
     ),
   },
 
@@ -229,9 +289,12 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'Leg Extension & Lying Leg Curl (Machine)', 3, '12-15', '60s', 'Quads & Hamstrings',
       'Sit in leg extension machine with pad against lower shins. Extend knees fully, pausing 1s at top for quads. Follow with lying leg curl machine for hamstring isolation.',
       'beginner',
-      'YyvSfV_84KQ',
+      'm0Bg-w0j47Y',
       ['Quadriceps Isolation', 'Hamstrings'],
-      'Leg Extension & Leg Curl Machine'
+      'Leg Extension & Leg Curl Machine',
+      ['Adjust back pad so your knee joint aligns directly with the machine pivot.'],
+      ['Kicking with momentum instead of contracting quads.'],
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_extension
     ),
     dumbbells_only: ex(
       'Dumbbell Romanian Deadlift', 3, '10-12', '75s', 'Hamstrings / Lower Back',
@@ -239,7 +302,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'hCDzSR6bW10',
       ['Hamstrings', 'Glutes'],
-      'Pair of Dumbbells'
+      'Pair of Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_deadlift
     ),
     no_equipment: ex(
       'Single-Leg Glute Bridge', 3, '12-15 each', '45s', 'Glutes & Hamstrings',
@@ -247,7 +312,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '0aW_eY23Yt8',
       ['Glutes', 'Hamstrings'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_squat
     ),
   },
 
@@ -258,7 +325,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'bEv6CCg2BC8',
       ['Quadriceps', 'Gluteus Maximus', 'Adductors', 'Core'],
-      'Barbell & Squat Rack'
+      'Barbell & Squat Rack',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_squat
     ),
     dumbbells_only: ex(
       'Dumbbell Goblet Squat', 4, '10-12', '75s', 'Quads / Glutes',
@@ -266,7 +335,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'MeIiIdhvXT4',
       ['Quads', 'Glutes', 'Core'],
-      'Single Heavy Dumbbell'
+      'Single Heavy Dumbbell',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_squat
     ),
     no_equipment: ex(
       'Bodyweight Air Squat', 4, '15-20', '60s', 'Quads / Glutes',
@@ -274,7 +345,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'aclHkVaku9U',
       ['Quadriceps', 'Glutes', 'Hamstrings'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_squat
     ),
   },
 
@@ -285,7 +358,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'L8fvypPrzzs',
       ['Quads', 'Glutes', 'Hamstrings', 'Balance'],
-      'Pair of Dumbbells'
+      'Pair of Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_lunge
     ),
     dumbbells_only: ex(
       'Dumbbell Reverse Lunges', 3, '10-12 each', '60s', 'Quads / Glutes',
@@ -293,7 +368,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '7jA_RkgN3k0',
       ['Quads', 'Glutes'],
-      'Pair of Dumbbells'
+      'Pair of Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_lunge
     ),
     no_equipment: ex(
       'Walking Lunges (Bodyweight)', 3, '12-15 each', '60s', 'Quads / Glutes',
@@ -301,7 +378,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'wrwwXE_x-pQ',
       ['Quads', 'Glutes'],
-      'Bodyweight'
+      'Bodyweight',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.legs_lunge
     ),
   },
 
@@ -313,7 +392,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'GZbfZ033f74',
       ['Latissimus Dorsi', 'Rhomboids', 'Middle Traps', 'Biceps'],
-      'Seated Cable Row Station'
+      'Seated Cable Row Station',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_row
     ),
     dumbbells_only: ex(
       'Dumbbell Bent-Over Row', 4, '10-12', '75s', 'Back',
@@ -321,7 +402,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '6TSzcG1bZ8I',
       ['Lats', 'Upper Back', 'Biceps'],
-      'Pair of Dumbbells'
+      'Pair of Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_row
     ),
     no_equipment: ex(
       'Inverted Table Row', 4, '10-15', '60s', 'Back',
@@ -329,7 +412,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'hXTc1mDNnOI',
       ['Lats', 'Rhomboids', 'Rear Delts'],
-      'Sturdy Table or Low Bar'
+      'Sturdy Table or Low Bar',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_row
     ),
   },
 
@@ -340,7 +425,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'CAwf7n6Luuc',
       ['Latissimus Dorsi', 'Teres Major', 'Biceps'],
-      'Lat Pulldown Cable Station'
+      'Lat Pulldown Cable Station',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_pulldown
     ),
     dumbbells_only: ex(
       'Single-Arm Dumbbell Row', 3, '10-12', '60s', 'Lats',
@@ -348,7 +435,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'pYcpY20QaE8',
       ['Latissimus Dorsi', 'Rhomboids'],
-      'Flat Bench & Dumbbell'
+      'Flat Bench & Dumbbell',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_pulldown
     ),
     no_equipment: ex(
       'Pull-Up', 3, '5-10', '90s', 'Lats',
@@ -356,7 +445,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'eGo4IYlbE5g',
       ['Lats', 'Upper Back', 'Biceps', 'Grip'],
-      'Pull-Up Bar'
+      'Pull-Up Bar',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_pulldown
     ),
   },
 
@@ -367,7 +458,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       '_oyxCn2iSjU',
       ['Hamstrings', 'Gluteus Maximus', 'Erector Spinae'],
-      'Barbell & Plates'
+      'Barbell & Plates',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_deadlift
     ),
     dumbbells_only: ex(
       'Dumbbell Romanian Deadlift', 3, '10-12', '75s', 'Hamstrings / Lower Back',
@@ -375,7 +468,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'hCDzSR6bW10',
       ['Hamstrings', 'Glutes', 'Lower Back'],
-      'Pair of Dumbbells'
+      'Pair of Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_deadlift
     ),
     no_equipment: ex(
       'Good Morning (Bodyweight)', 3, '12-15', '60s', 'Hamstrings / Lower Back',
@@ -383,7 +478,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'rgn4nN9F0i8',
       ['Hamstrings', 'Glutes', 'Lower Back'],
-      'Bodyweight'
+      'Bodyweight',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.back_deadlift
     ),
   },
 
@@ -395,7 +492,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       '2yjwXTZQDDI',
       ['Anterior Deltoids', 'Lateral Deltoids', 'Triceps', 'Core'],
-      'Barbell & Rack / Shoulder Machine'
+      'Barbell & Rack / Shoulder Machine',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.shoulder_press
     ),
     dumbbells_only: ex(
       'Seated Dumbbell Shoulder Press', 4, '10-12', '75s', 'Shoulders',
@@ -403,7 +502,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'qEwKCR5JCog',
       ['Front & Side Deltoids', 'Triceps'],
-      'Dumbbells & Bench'
+      'Dumbbells & Bench',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.shoulder_press
     ),
     no_equipment: ex(
       'Pike Push-Up', 4, '10-15', '60s', 'Shoulders',
@@ -411,7 +512,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'q8m_iX46q_U',
       ['Anterior Deltoids', 'Triceps', 'Core'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.shoulder_press
     ),
   },
 
@@ -422,7 +525,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '3VcKaXpzqRo',
       ['Lateral Deltoid (Boulder Shoulders)'],
-      'Pair of Dumbbells / Cable'
+      'Pair of Dumbbells / Cable',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral
     ),
     dumbbells_only: ex(
       'Dumbbell Lateral Raise', 4, '12-15', '45s', 'Side Deltoids',
@@ -430,7 +535,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '3VcKaXpzqRo',
       ['Side Delts'],
-      'Dumbbells'
+      'Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral
     ),
     no_equipment: ex(
       'Lateral Arm Circles & Pulses', 3, '45 sec', '30s', 'Side Deltoids',
@@ -438,7 +545,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '140EXPBNXXU',
       ['Deltoids Endurance'],
-      'Bodyweight'
+      'Bodyweight',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral
     ),
   },
 
@@ -450,7 +559,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'kwG2ipFRgfo',
       ['Biceps Brachii', 'Brachialis', 'Forearms'],
-      'Barbell / EZ Bar / Machine'
+      'Barbell / EZ Bar / Machine',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps
     ),
     dumbbells_only: ex(
       'Dumbbell Hammer Curl', 3, '10-12', '60s', 'Biceps / Forearms',
@@ -458,7 +569,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'zC3nLlEvin4',
       ['Brachialis', 'Biceps', 'Brachioradialis Forearm'],
-      'Dumbbells'
+      'Dumbbells',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps
     ),
     no_equipment: ex(
       'Towel Bicep Curl / Isometric', 3, '12-15', '45s', 'Biceps',
@@ -466,7 +579,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'p_8pWj1bB9k',
       ['Biceps Brachii'],
-      'Towel / Resistance'
+      'Towel / Resistance',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps
     ),
   },
 
@@ -477,7 +592,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'vB5OHsJ3EME',
       ['Lateral & Medial Triceps Heads'],
-      'Cable Machine & Rope'
+      'Cable Machine & Rope',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps
     ),
     dumbbells_only: ex(
       'Overhead Dumbbell Triceps Extension', 3, '10-12', '60s', 'Triceps',
@@ -485,7 +602,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '_gsUokN_Abg',
       ['Long Head of Triceps'],
-      'Single Dumbbell'
+      'Single Dumbbell',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps
     ),
     no_equipment: ex(
       'Bench / Chair Triceps Dips', 3, '12-15', '45s', 'Triceps',
@@ -493,7 +612,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '0326dy_-CzM',
       ['Triceps', 'Front Shoulders'],
-      'Chair or Bed Edge'
+      'Chair or Bed Edge',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps
     ),
   },
 
@@ -505,7 +626,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'hdng3Nm1x_E',
       ['Lower Rectus Abdominis', 'Hip Flexors', 'Grip'],
-      'Pull-Up Bar Station'
+      'Pull-Up Bar Station',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.core_abs
     ),
     dumbbells_only: ex(
       'Dumbbell Russian Twist', 3, '20 total', '45s', 'Obliques / Abs',
@@ -513,7 +636,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'wkD8rjkodUI',
       ['Internal & External Obliques', 'Rectus Abdominis'],
-      'Single Dumbbell'
+      'Single Dumbbell',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.core_abs
     ),
     no_equipment: ex(
       'Forearm Plank Hold', 3, '45-60 sec', '45s', 'Core',
@@ -521,7 +646,9 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'ASdvN_XEl_c',
       ['Transverse Abdominis', 'Rectus Abdominis', 'Lower Back'],
-      'Floor Mat'
+      'Floor Mat',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.core_abs
     ),
   },
 
@@ -533,23 +660,29 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'L_xrDAtyPqI',
       ['Full Body Mobility', 'Hamstrings', 'Hip Flexors', 'Chest', 'Spine'],
-      'Mat / Resistance Band'
+      'Mat / Resistance Band',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.stretching
     ),
     dumbbells_only: ex(
       'Post-Workout Full Body Stretching', 3, '30 sec each', '15s', 'Mobility & Stretching',
       'Standing quad stretch, cross-body shoulder stretch, downward dog calf stretch, world greatest stretch, and child pose.',
       'beginner',
-      'L_xrDAtyPqI',
+      'g_tea8ZNk5A',
       ['Hamstrings', 'Quadriceps', 'Shoulders', 'Lats'],
-      'Floor Mat'
+      'Floor Mat',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.stretching
     ),
     no_equipment: ex(
       'Daily Full Body Stretching & Mobility', 3, '30-45 sec', '15s', 'Mobility & Stretching',
       'Forward fold for hamstrings, cobra pose for abs/lower back, pigeon pose for glutes, and doorway chest stretch.',
       'beginner',
-      'L_xrDAtyPqI',
+      'sTxC3J3gQEU',
       ['Full Body Flexibility', 'Spine', 'Hips', 'Hamstrings'],
-      'Bodyweight / Floor'
+      'Bodyweight / Floor',
+      undefined, undefined,
+      EXERCISE_ALTERNATIVE_VIDEOS.stretching
     ),
   },
 };
@@ -657,11 +790,18 @@ export function generateWorkoutPlan(
 }
 
 /**
- * Intelligent fuzzy matcher to find videos and tutorials for ANY exercise name or keyword.
+ * Intelligent fuzzy matcher to find videos and tutorials for ANY exercise name or keyword, with cyclic index support.
  */
-export function findExerciseVideo(name: string): Partial<Exercise> | null {
+export function findExerciseVideo(name: string, cycleIndex: number = 0): Partial<Exercise> | null {
   if (!name || !name.trim()) return null;
   const q = name.toLowerCase().trim();
+
+  // Helper to pick video at cycleIndex
+  const pickVideo = (vList: string[]) => {
+    if (!vList || vList.length === 0) return 'rT7DgCr-3pg';
+    const safeIdx = Math.abs(cycleIndex) % vList.length;
+    return vList[safeIdx];
+  };
 
   // 1. Direct Search in EXERCISE_DB
   for (const slotKey of Object.keys(EXERCISE_DB)) {
@@ -673,9 +813,13 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
         exItem.name.toLowerCase().includes(q) ||
         q.includes(exItem.name.toLowerCase())
       ) {
+        const alts = exItem.alternativeVideos && exItem.alternativeVideos.length > 0
+          ? exItem.alternativeVideos
+          : [exItem.videoUrl || 'rT7DgCr-3pg'];
         return {
           name: exItem.name,
-          videoUrl: exItem.videoUrl,
+          videoUrl: pickVideo(alts),
+          alternativeVideos: alts,
           muscleGroup: exItem.muscleGroup,
           instructions: exItem.instructions,
           targetMuscles: exItem.targetMuscles,
@@ -696,9 +840,13 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
       const exLower = exItem.name.toLowerCase();
       const matchCount = tokens.filter(t => exLower.includes(t)).length;
       if (matchCount >= 2 || (tokens.length === 1 && matchCount === 1)) {
+        const alts = exItem.alternativeVideos && exItem.alternativeVideos.length > 0
+          ? exItem.alternativeVideos
+          : [exItem.videoUrl || 'rT7DgCr-3pg'];
         return {
           name: exItem.name,
-          videoUrl: exItem.videoUrl,
+          videoUrl: pickVideo(alts),
+          alternativeVideos: alts,
           muscleGroup: exItem.muscleGroup,
           instructions: exItem.instructions,
           targetMuscles: exItem.targetMuscles,
@@ -710,11 +858,24 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
     }
   }
 
-  // 3. Semantic Keyword Routing Fallback
+  // 3. Category Fallback Mapping
+  if (q.includes('extension') || q.includes('leg curl') || (q.includes('machine') && q.includes('leg'))) {
+    return {
+      name: 'Leg Extension & Curl Machine',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_extension),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_extension,
+      muscleGroup: 'Quads & Hamstrings',
+      instructions: 'Contract quads to full knee extension or curl heels back towards buttocks under strict control.',
+      targetMuscles: ['Quadriceps', 'Hamstrings'],
+      equipment: 'Leg Machine',
+    };
+  }
+
   if (q.includes('machine') && q.includes('chest')) {
     return {
       name: 'Machine Chest Press',
-      videoUrl: 'xUm0BiKGcwE',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_machine),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_machine,
       muscleGroup: 'Chest',
       instructions: 'Sit with handles at mid-chest height. Press forward smoothly until arms are nearly extended, lower with a 2-second control.',
       targetMuscles: ['Pectoralis Major', 'Anterior Deltoids', 'Triceps'],
@@ -722,10 +883,11 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
     };
   }
 
-  if (q.includes('machine') && (q.includes('leg') || q.includes('press'))) {
+  if (q.includes('leg press')) {
     return {
       name: 'Leg Press Machine',
-      videoUrl: 'IZxyjW7MPJQ',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_press),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_press,
       muscleGroup: 'Quads / Glutes',
       instructions: 'Place feet shoulder-width on footplate. Lower platform to 90 degrees knee bend, press back up without locking knees.',
       targetMuscles: ['Quadriceps', 'Glutes', 'Hamstrings'],
@@ -736,19 +898,20 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('stretch') || q.includes('mobility') || q.includes('flexibility') || q.includes('yoga')) {
     return {
       name: 'Full Body Dynamic & Static Stretching',
-      videoUrl: 'L_xrDAtyPqI',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.stretching),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.stretching,
       muscleGroup: 'Mobility & Stretching',
       instructions: 'Head-to-toe stretching sequence: hold each stretch for 30 seconds while breathing deeply to release muscular tension and improve recovery.',
       targetMuscles: ['Full Body Flexibility', 'Hamstrings', 'Hips', 'Shoulders', 'Spine'],
       equipment: 'Mat / Bodyweight',
-      tips: ['Breathe deeply and ease into each stretch without bouncing.'],
     };
   }
 
   if (q.includes('warmup') || q.includes('warm up')) {
     return {
       name: 'Dynamic Warm-Up Routine',
-      videoUrl: 'g_tea8ZNk5A',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.stretching),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.stretching,
       muscleGroup: 'Full Body Warm-Up',
       instructions: 'Arm circles, leg swings, hip openers, and bodyweight squats to prime muscles and joints before training.',
       targetMuscles: ['Joints', 'Cardiovascular', 'Mobility'],
@@ -759,7 +922,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('cardio') || q.includes('treadmill') || q.includes('running') || q.includes('walk')) {
     return {
       name: 'Cardio & Incline Treadmill Walk',
-      videoUrl: '3gK-mYmO6Qk',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.cardio),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.cardio,
       muscleGroup: 'Cardio & Conditioning',
       instructions: 'Maintain steady pace at 10-12% incline or alternate jogging intervals for maximum caloric expenditure.',
       targetMuscles: ['Cardiovascular System', 'Calves', 'Glutes'],
@@ -770,7 +934,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('curl') || q.includes('bicep')) {
     return {
       name: 'Bicep Curl',
-      videoUrl: 'kwG2ipFRgfo',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps,
       muscleGroup: 'Biceps',
       instructions: 'Curl weight upward squeezing biceps at peak contraction. Lower with a 2-second eccentric phase.',
       targetMuscles: ['Biceps Brachii', 'Forearms'],
@@ -781,7 +946,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('tricep') || q.includes('pushdown') || q.includes('extension') || q.includes('dip')) {
     return {
       name: 'Triceps Extension / Pushdown',
-      videoUrl: 'vB5OHsJ3EME',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps,
       muscleGroup: 'Triceps',
       instructions: 'Extend forearms downward locking out elbows to contract all three triceps heads.',
       targetMuscles: ['Triceps Brachii'],
@@ -792,7 +958,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('squat') || q.includes('leg') || q.includes('quad')) {
     return {
       name: 'Squat',
-      videoUrl: 'bEv6CCg2BC8',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_squat),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_squat,
       muscleGroup: 'Quads / Glutes',
       instructions: 'Sit hips down and back with knees aligned over toes. Drive through midfoot to stand.',
       targetMuscles: ['Quadriceps', 'Glutes'],
@@ -803,7 +970,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('bench') || q.includes('press') || q.includes('chest') || q.includes('pushup') || q.includes('push up')) {
     return {
       name: 'Chest Press',
-      videoUrl: 'rT7DgCr-3pg',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_bench),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_bench,
       muscleGroup: 'Chest',
       instructions: 'Lower weight with elbows at 45 degrees until chest stretch, then press back up explosively.',
       targetMuscles: ['Pectoralis Major', 'Triceps', 'Front Delts'],
@@ -814,7 +982,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('row') || q.includes('pull') || q.includes('lat') || q.includes('back')) {
     return {
       name: 'Back Row / Pulldown',
-      videoUrl: '9efgc2Wg0PQ',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.back_row),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.back_row,
       muscleGroup: 'Back',
       instructions: 'Pull weight towards lower ribs driving elbows back and squeezing shoulder blades.',
       targetMuscles: ['Lats', 'Rhomboids', 'Biceps'],
@@ -825,7 +994,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('shoulder') || q.includes('delt') || q.includes('overhead') || q.includes('raise')) {
     return {
       name: 'Shoulder Press / Lateral Raise',
-      videoUrl: '3VcKaXpzqRo',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral,
       muscleGroup: 'Shoulders',
       instructions: 'Raise weight with controlled tempo to shoulder height without shrugging traps.',
       targetMuscles: ['Deltoids'],
@@ -836,7 +1006,8 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (q.includes('plank') || q.includes('ab') || q.includes('core') || q.includes('crunch')) {
     return {
       name: 'Plank & Core Exercise',
-      videoUrl: 'ASdvN_XEl_c',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.core_abs),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.core_abs,
       muscleGroup: 'Core / Abs',
       instructions: 'Hold rigid plank posture bracing abdominal wall and glutes.',
       targetMuscles: ['Rectus Abdominis', 'Transverse Abdominis'],
