@@ -12,13 +12,13 @@ export type Equipment = 'full_gym' | 'dumbbells_only' | 'no_equipment';
 export interface Exercise {
   name: string;
   sets: number;
-  reps: string;        // e.g. "8-12" or "30 sec"
-  rest: string;        // e.g. "60s"
+  reps: string;
+  rest: string;
   muscleGroup: string;
   instructions: string;
   difficulty: FitnessLevel;
-  videoUrl?: string;   // YouTube Video Form Guide ID (e.g. rT7DgCr-3pg)
-  gifUrl?: string;     // Animated demonstration GIF/SVG
+  videoUrl?: string;
+  gifUrl?: string;
   targetMuscles?: string[];
   equipment?: string;
   tips?: string[];
@@ -26,8 +26,8 @@ export interface Exercise {
 }
 
 export interface WorkoutDay {
-  day: string;         // "Monday", "Wednesday" etc.
-  focus: string;       // "Full Body", "Push", "Pull", "Legs", "Upper", "Lower"
+  day: string;
+  focus: string;
   exercises: Exercise[];
   isRestDay: boolean;
 }
@@ -80,122 +80,39 @@ function ex(
 }
 
 /**
- * Comprehensive exercise database (50+ entries) with HD video demos, muscle anatomy, and form tips.
+ * Comprehensive exercise database with Gym Machines, Barbells, Dumbbells, Bodyweight & Stretching.
  */
 const EXERCISE_DB: Record<string, ExerciseDB> = {
-  // â”€â”€ Stretching & Mobility (New!) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  stretching_full_body: {
+  // â”€â”€ Machine & Free-Weight Chest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  chest_machine_press: {
     full_gym: ex(
-      'Full Body Dynamic & Static Stretching Routine', 3, '30-45 sec per stretch', '15s', 'Mobility & Stretching',
-      'Perform a head-to-toe stretching sequence: neck rolls, shoulder dislocation pass-throughs with band, cat-cow spine flexion, standing hamstring fold, deep lunging hip flexor stretch, and seated butterfly. Hold each stretch for 30 seconds while taking deep diaphragmatic breaths.',
+      'Machine Chest Press (Seated Chest Press)', 3, '10-12', '60s', 'Chest',
+      'Adjust seat height so handles align with mid-chest. Plant feet firmly, brace core, and press handles forward smoothly until arms are almost fully extended. Lower with a 2-second control.',
       'beginner',
-      'L_xrDAtyPqI',
-      ['Full Body Mobility', 'Hamstrings', 'Hip Flexors', 'Chest', 'Spine'],
-      'Mat / Resistance Band',
-      ['Breathe deeply in through your nose and out through your mouth into the stretch.', 'Never bounce aggressively in a static stretch; ease into tension gently.'],
-      ['Holding your breath during deep stretches.', 'Forcing joints past their comfortable range of motion.']
+      'xUm0BiKGcwE',
+      ['Pectoralis Major', 'Anterior Deltoids', 'Triceps'],
+      'Seated Chest Press Machine',
+      ['Keep shoulder blades pinned against the back pad throughout the movement.', 'Do not bounce the weight stack at the bottom.'],
+      ['Shrugging shoulders upward during the press.']
     ),
     dumbbells_only: ex(
-      'Post-Workout Full Body Stretching', 3, '30 sec each', '15s', 'Mobility & Stretching',
-      'Complete routine: standing quad stretch, cross-body shoulder stretch, downward dog calf stretch, world greatest stretch (lunge with thoracic twist), and child pose.',
+      'Dumbbell Floor Press', 3, '10-12', '60s', 'Chest',
+      'Lie on floor with dumbbells at chest level. Press up until arms extend, lower until triceps touch floor.',
       'beginner',
-      'L_xrDAtyPqI',
-      ['Hamstrings', 'Quadriceps', 'Shoulders', 'Lats', 'Hips'],
-      'Floor Mat'
+      'uUGDRwge4F8',
+      ['Chest', 'Triceps'],
+      'Dumbbells & Floor'
     ),
     no_equipment: ex(
-      'Daily Full Body Stretching & Mobility', 3, '30-45 sec', '15s', 'Mobility & Stretching',
-      'Head-to-toe mobility sequence: forward fold for hamstrings, cobra pose for abs/lower back, pigeon pose for glutes, and doorway chest stretch.',
+      'Push-Up with Slow Eccentric', 3, '10-15', '60s', 'Chest',
+      'Standard pushup taking 3 full seconds to lower chest to floor before pushing up explosively.',
       'beginner',
-      'L_xrDAtyPqI',
-      ['Full Body Flexibility', 'Spine', 'Hips', 'Hamstrings'],
+      'IODxDxX7oi4',
+      ['Pectoralis Major', 'Core', 'Triceps'],
       'Bodyweight / Floor'
     ),
   },
 
-  stretching_upper_body: {
-    full_gym: ex(
-      'Chest, Shoulder & Upper Back Mobility Stretch', 3, '30 sec per side', '15s', 'Shoulders / Chest Mobility',
-      'Use a resistance band or doorway to stretch anterior deltoids and chest pectorals. Follow with cross-body arm stretch for rear delts and overhead triceps latch stretch.',
-      'beginner',
-      'g_tea8ZNk5A',
-      ['Pectorals', 'Deltoids', 'Rotator Cuff', 'Thoracic Spine'],
-      'Doorway or Wall'
-    ),
-    dumbbells_only: ex(
-      'Shoulder & Thoracic Spine Mobility', 3, '30 sec', '15s', 'Shoulders / Upper Back',
-      'Doorway chest stretch, wall angels, and kneeling thread-the-needle for upper back rotation.',
-      'beginner',
-      'g_tea8ZNk5A',
-      ['Shoulders', 'Chest', 'Upper Back'],
-      'Wall / Mat'
-    ),
-    no_equipment: ex(
-      'Doorway Chest & Shoulder Opener Stretch', 3, '30 sec', '15s', 'Upper Body Flexibility',
-      'Place forearm against doorframe at 90 degrees and step forward until deep stretch is felt across pecs and shoulder.',
-      'beginner',
-      'g_tea8ZNk5A',
-      ['Chest Pecs', 'Anterior Delts'],
-      'Doorframe'
-    ),
-  },
-
-  stretching_lower_body: {
-    full_gym: ex(
-      'Hamstring, Hip Flexor & Glute Deep Stretch', 3, '40 sec per side', '15s', 'Legs & Hips Flexibility',
-      'Pigeon pose for piriformis/glute release, half-kneeling hip flexor lunge, standing toe touch for hamstrings, and standing quad pull.',
-      'beginner',
-      'eOz1_8LXZHk',
-      ['Hamstrings', 'Iliopsoas Hip Flexors', 'Glutes', 'Calves'],
-      'Mat'
-    ),
-    dumbbells_only: ex(
-      'Hamstring & Quad Stretching Routine', 3, '30 sec', '15s', 'Legs Flexibility',
-      'Seated single-leg hamstring reach, kneeling couch stretch for hip flexors, and frog pose for adductors.',
-      'beginner',
-      'eOz1_8LXZHk',
-      ['Hamstrings', 'Quadriceps', 'Adductors'],
-      'Floor Mat'
-    ),
-    no_equipment: ex(
-      'Lower Body Hamstring & Hip Mobility Flow', 3, '30 sec each', '15s', 'Legs & Hips',
-      'Downward facing dog to stretch calves and hamstrings, followed by deep yogic squat (Malasana) for hip opening.',
-      'beginner',
-      'eOz1_8LXZHk',
-      ['Calves', 'Hamstrings', 'Groin', 'Hips'],
-      'Bodyweight / Floor'
-    ),
-  },
-
-  // â”€â”€ Cardio & Conditioning (New!) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  cardio_hiit: {
-    full_gym: ex(
-      'Treadmill Incline Walk / Sprints', 1, '15-20 min', '60s', 'Cardio & Conditioning',
-      'Set incline to 10-12% and speed to 4.5-5.5 km/h for steady state fat burn, or alternate 30s sprint / 60s walk for HIIT conditioning.',
-      'beginner',
-      '3gK-mYmO6Qk',
-      ['Cardiovascular Endurance', 'Calves', 'Glutes', 'Hamstrings'],
-      'Treadmill'
-    ),
-    dumbbells_only: ex(
-      'Jump Rope (Skipping) HIIT', 4, '60 sec on / 30 sec off', '30s', 'Cardio & Calves',
-      'Bounce lightly on balls of feet with wrists rotating rope smoothly. Keep core tight and elbows tucked.',
-      'beginner',
-      'u3zgHI8QnqE',
-      ['Cardio Endurance', 'Calves', 'Forearms', 'Footwork'],
-      'Jump Rope'
-    ),
-    no_equipment: ex(
-      'Burpees & Jumping Jacks HIIT', 4, '45 sec on / 15 sec rest', '30s', 'Full Body Cardio',
-      'Drop down into pushup, kick feet back in, and jump up with hands overhead. Great for maximum calorie burn.',
-      'beginner',
-      'auBLPXO8Fww',
-      ['Full Body Cardio', 'Quads', 'Chest', 'Core'],
-      'Bodyweight / Floor'
-    ),
-  },
-
-  // â”€â”€ Chest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   chest_press_compound: {
     full_gym: ex(
       'Barbell Bench Press', 4, '6-10', '90s', 'Chest',
@@ -203,9 +120,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'rT7DgCr-3pg',
       ['Pectoralis Major', 'Anterior Deltoids', 'Triceps Brachii'],
-      'Barbell & Flat Bench',
-      ['Pinch your shoulder blades and drive your feet firmly into the ground.', 'Lower the bar slowly over 2-3 seconds for maximum pec stretch.'],
-      ['Bouncing the barbell off your sternum.', 'Flaring elbows out at a 90-degree angle which strains rotator cuffs.']
+      'Barbell & Flat Bench'
     ),
     dumbbells_only: ex(
       'Dumbbell Bench Press', 4, '8-12', '75s', 'Chest',
@@ -213,26 +128,22 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'VmB1G1K7v94',
       ['Pectoralis Major', 'Triceps', 'Shoulders'],
-      'Pair of Dumbbells',
-      ['Allow dumbbells to give you a deeper, safer stretch at the bottom than a barbell.', 'Squeeze pecs at the top of the movement.'],
-      ['Clinking dumbbells aggressively at the top.', 'Arching lower back off the bench excessively.']
+      'Pair of Dumbbells'
     ),
     no_equipment: ex(
       'Push-Up', 4, '10-20', '60s', 'Chest',
-      'Start in a high plank with hands slightly wider than shoulders. Lower chest to just above the floor with elbows at 45 degrees, then push back up through the palms while keeping core tight.',
+      'Start in a high plank with hands slightly wider than shoulders. Lower chest to just above the floor with elbows at 45 degrees, then push back up.',
       'beginner',
       'IODxDxX7oi4',
-      ['Pectoralis Major', 'Core / Abs', 'Triceps', 'Front Shoulders'],
-      'Bodyweight / Floor',
-      ['Keep your glutes and abs squeezed tight to maintain a straight line from neck to heels.', 'Push the ground away actively at the top.'],
-      ['Sagging hips or piking your buttocks up in the air.', 'Flaring elbows straight out to the sides.']
+      ['Pectoralis Major', 'Core / Abs', 'Triceps'],
+      'Bodyweight / Floor'
     ),
   },
 
   chest_incline: {
     full_gym: ex(
       'Incline Barbell Press', 3, '8-12', '75s', 'Upper Chest',
-      'Set bench to 30-45 degrees. Grip barbell just wider than shoulders. Lower bar to upper chest under control, then press up. Focus on squeezing upper pecs at the top.',
+      'Set bench to 30-45 degrees. Grip barbell just wider than shoulders. Lower bar to upper chest under control, then press up. Focus on squeezing upper pecs.',
       'intermediate',
       'SrqOu55lrYU',
       ['Clavicular Upper Pecs', 'Anterior Deltoids', 'Triceps'],
@@ -248,7 +159,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
     no_equipment: ex(
       'Decline Push-Up', 3, '10-15', '60s', 'Upper Chest',
-      'Elevate feet on a chair, bed or step with hands on the floor. Perform push-ups in this angled position to place maximum resistance onto upper chest and shoulders.',
+      'Elevate feet on a chair, bed or step with hands on the floor. Perform push-ups in this angled position to place maximum resistance onto upper chest.',
       'beginner',
       'SKPab2YC8BE',
       ['Upper Chest', 'Anterior Delts', 'Triceps'],
@@ -258,16 +169,16 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
 
   chest_fly: {
     full_gym: ex(
-      'Cable Chest Fly', 3, '12-15', '60s', 'Chest',
-      'Set cables to chest height. Stand in split stance, pull handles together in a hugging arc meeting in front of chest. Squeeze pecs hard for 1 second.',
-      'intermediate',
+      'Pec Deck Machine Fly / Cable Fly', 3, '12-15', '60s', 'Chest',
+      'Sit on pec deck machine with back flat against pad. Grip handles and bring arms together in a hugging motion, squeezing pecs for 1 full second at peak contraction.',
+      'beginner',
       'Iwe6AmxVf7o',
       ['Inner & Outer Pectorals', 'Anterior Deltoids'],
-      'Dual Cable Machine'
+      'Pec Deck Machine / Cables'
     ),
     dumbbells_only: ex(
       'Dumbbell Chest Fly', 3, '12-15', '60s', 'Chest',
-      'Lie on bench holding dumbbells above chest, palms facing each other. Lower dumbbells in wide arcs until you feel a comfortable chest stretch, then bring back together.',
+      'Lie on bench holding dumbbells above chest, palms facing each other. Lower dumbbells in wide arcs until you feel a comfortable chest stretch.',
       'beginner',
       'eozdVDA78K0',
       ['Pectoralis Major', 'Chest Stretch'],
@@ -283,42 +194,126 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  chest_dips: {
+  // â”€â”€ Machine & Free-Weight Legs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  legs_machine_press: {
     full_gym: ex(
-      'Chest Dips', 3, '8-12', '75s', 'Chest / Triceps',
-      'Grip parallel dip bars. Lean torso forward 30 degrees to bias chest fibers. Lower until elbows reach 90 degrees, then press back up powerfully.',
-      'intermediate',
-      '2z8JmcrW-As',
-      ['Lower Pectorals', 'Triceps Brachii', 'Front Deltoids'],
-      'Parallel Dip Bars'
+      'Leg Press (Machine)', 4, '10-12', '75s', 'Quads / Glutes',
+      'Place feet shoulder-width on footplate. Release safety bars and lower platform until knees are at 90 degrees. Press platform back up through midfoot and heels. Never lock knees violently.',
+      'beginner',
+      'IZxyjW7MPJQ',
+      ['Quadriceps', 'Gluteus Maximus', 'Hamstrings'],
+      '45-Degree Leg Press Machine',
+      ['Keep lower back pressed firmly into the backrest at all times.'],
+      ['Hyperextending and locking out knees at the top.']
     ),
     dumbbells_only: ex(
-      'Close-Grip Dumbbell Press', 3, '10-12', '60s', 'Chest / Triceps',
-      'Hold two dumbbells pressed firmly together at chest. Press up in a straight line keeping dumbbells squeezed together throughout.',
-      'intermediate',
-      'Ym_N2K790eU',
-      ['Inner Chest', 'Triceps'],
-      'Dumbbells & Bench'
+      'Dumbbell Goblet Squat', 4, '10-12', '75s', 'Quads / Glutes',
+      'Hold a heavy dumbbell vertically against chest. Squat down between knees, keeping torso upright.',
+      'beginner',
+      'MeIiIdhvXT4',
+      ['Quads', 'Glutes', 'Core'],
+      'Single Heavy Dumbbell'
     ),
     no_equipment: ex(
-      'Diamond Push-Up', 3, '10-15', '60s', 'Chest / Triceps',
-      'Form a diamond shape with thumbs and index fingers under chest. Perform push-ups keeping elbows tucked close to sides.',
-      'intermediate',
-      'J0DnG1_S92I',
-      ['Triceps', 'Inner Chest Pecs'],
+      'Bodyweight Air Squat', 4, '15-20', '60s', 'Quads / Glutes',
+      'Stand with feet shoulder-width. Lower hips down and back below knee level, keeping heels planted, then drive back up to standing.',
+      'beginner',
+      'aclHkVaku9U',
+      ['Quadriceps', 'Glutes', 'Hamstrings'],
       'Bodyweight / Floor'
     ),
   },
 
-  // â”€â”€ Back â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  back_compound_row: {
+  legs_machine_extension_curl: {
     full_gym: ex(
-      'Barbell Bent-Over Row', 4, '6-10', '90s', 'Back',
-      'Hinge at hips to 45 degrees, back straight. Pull barbell to lower abdomen, driving elbows back. Squeeze shoulder blades together, lower under control.',
+      'Leg Extension & Lying Leg Curl (Machine)', 3, '12-15', '60s', 'Quads & Hamstrings',
+      'Sit in leg extension machine with pad against lower shins. Extend knees fully, pausing 1s at top for quads. Follow with lying leg curl machine for hamstring isolation.',
+      'beginner',
+      'YyvSfV_84KQ',
+      ['Quadriceps Isolation', 'Hamstrings'],
+      'Leg Extension & Leg Curl Machine'
+    ),
+    dumbbells_only: ex(
+      'Dumbbell Romanian Deadlift', 3, '10-12', '75s', 'Hamstrings / Lower Back',
+      'Hold dumbbells against front of thighs. Push hips backwards, lowering dumbbells just below knees, feeling deep stretch in hamstrings.',
+      'beginner',
+      'hCDzSR6bW10',
+      ['Hamstrings', 'Glutes'],
+      'Pair of Dumbbells'
+    ),
+    no_equipment: ex(
+      'Single-Leg Glute Bridge', 3, '12-15 each', '45s', 'Glutes & Hamstrings',
+      'Lie on back with one leg extended in air. Drive heel of working foot into ground to raise hips.',
+      'beginner',
+      '0aW_eY23Yt8',
+      ['Glutes', 'Hamstrings'],
+      'Bodyweight / Floor'
+    ),
+  },
+
+  legs_squat: {
+    full_gym: ex(
+      'Barbell Back Squat', 4, '6-10', '90s', 'Quads / Glutes',
+      'Rest bar across upper traps. Stand shoulder-width, toes angled slightly out. Sit hips back and down until thighs are parallel to floor, then drive through mid-foot to stand.',
       'intermediate',
-      '9efgc2Wg0PQ',
-      ['Latissimus Dorsi', 'Rhomboids', 'Trapezius', 'Biceps'],
-      'Barbell & Weight Plates'
+      'bEv6CCg2BC8',
+      ['Quadriceps', 'Gluteus Maximus', 'Adductors', 'Core'],
+      'Barbell & Squat Rack'
+    ),
+    dumbbells_only: ex(
+      'Dumbbell Goblet Squat', 4, '10-12', '75s', 'Quads / Glutes',
+      'Hold a heavy dumbbell vertically against chest. Squat down between knees, keeping torso upright.',
+      'beginner',
+      'MeIiIdhvXT4',
+      ['Quads', 'Glutes', 'Core'],
+      'Single Heavy Dumbbell'
+    ),
+    no_equipment: ex(
+      'Bodyweight Air Squat', 4, '15-20', '60s', 'Quads / Glutes',
+      'Stand with feet shoulder-width. Lower hips down and back below knee level, keeping heels planted.',
+      'beginner',
+      'aclHkVaku9U',
+      ['Quadriceps', 'Glutes', 'Hamstrings'],
+      'Bodyweight / Floor'
+    ),
+  },
+
+  legs_lunge: {
+    full_gym: ex(
+      'Walking Dumbbell Lunges', 3, '10-12 each', '60s', 'Quads / Glutes',
+      'Step forward with one leg, lowering hips until both knees are at 90 degrees. Drive off front heel to step into the next rep.',
+      'beginner',
+      'L8fvypPrzzs',
+      ['Quads', 'Glutes', 'Hamstrings', 'Balance'],
+      'Pair of Dumbbells'
+    ),
+    dumbbells_only: ex(
+      'Dumbbell Reverse Lunges', 3, '10-12 each', '60s', 'Quads / Glutes',
+      'Hold dumbbells at sides. Step backward with one leg and lower rear knee toward floor. Push through front foot to return.',
+      'beginner',
+      '7jA_RkgN3k0',
+      ['Quads', 'Glutes'],
+      'Pair of Dumbbells'
+    ),
+    no_equipment: ex(
+      'Walking Lunges (Bodyweight)', 3, '12-15 each', '60s', 'Quads / Glutes',
+      'Step forward in smooth walking cadence, dropping back knee gently toward floor. Keep torso upright.',
+      'beginner',
+      'wrwwXE_x-pQ',
+      ['Quads', 'Glutes'],
+      'Bodyweight'
+    ),
+  },
+
+  // â”€â”€ Back & Machine Rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  back_machine_row: {
+    full_gym: ex(
+      'Seated Cable Row / Machine Row', 3, '10-12', '60s', 'Back',
+      'Sit at low cable row with feet on footrests. Pull handle to abdomen, driving elbows back and squeezing shoulder blades together. Slowly extend arms with control.',
+      'beginner',
+      'GZbfZ033f74',
+      ['Latissimus Dorsi', 'Rhomboids', 'Middle Traps', 'Biceps'],
+      'Seated Cable Row Station'
     ),
     dumbbells_only: ex(
       'Dumbbell Bent-Over Row', 4, '10-12', '75s', 'Back',
@@ -340,7 +335,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
 
   back_pulldown: {
     full_gym: ex(
-      'Lat Pulldown', 3, '10-12', '75s', 'Lats',
+      'Lat Pulldown (Machine / Cable)', 3, '10-12', '75s', 'Lats',
       'Grip bar wider than shoulders. Sit with thighs under pads. Pull bar to upper collarbone driving elbows down and back. Slowly extend arms overhead.',
       'beginner',
       'CAwf7n6Luuc',
@@ -376,7 +371,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
     dumbbells_only: ex(
       'Dumbbell Romanian Deadlift', 3, '10-12', '75s', 'Hamstrings / Lower Back',
-      'Hold dumbbells against front of thighs. Push hips backwards, lowering dumbbells just below knees, feeling stretch in hamstrings, then contract glutes to return upright.',
+      'Hold dumbbells against front of thighs. Push hips backwards, lowering dumbbells just below knees, feeling stretch in hamstrings.',
       'beginner',
       'hCDzSR6bW10',
       ['Hamstrings', 'Glutes', 'Lower Back'],
@@ -384,7 +379,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
     no_equipment: ex(
       'Good Morning (Bodyweight)', 3, '12-15', '60s', 'Hamstrings / Lower Back',
-      'Stand feet hip-width, hands behind head. Push hips backward, bowing forward until torso is parallel to floor. Squeeze hamstrings to stand.',
+      'Stand feet hip-width, hands behind head. Push hips backward, bowing forward until torso is parallel to floor.',
       'beginner',
       'rgn4nN9F0i8',
       ['Hamstrings', 'Glutes', 'Lower Back'],
@@ -392,42 +387,15 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  back_face_pull: {
-    full_gym: ex(
-      'Cable Face Pull', 3, '15-20', '45s', 'Rear Delts / Upper Back',
-      'Set cable at eye level with rope attachment. Pull rope towards eyes, pulling hands apart and externally rotating shoulders. Hold 1 second.',
-      'beginner',
-      'rep-qVOkqgk',
-      ['Rear Deltoids', 'Rotator Cuff', 'Trapezius'],
-      'Cable Machine with Rope Attachment'
-    ),
-    dumbbells_only: ex(
-      'Dumbbell Rear Delt Fly', 3, '15-20', '45s', 'Rear Delts',
-      'Hinge forward 45 degrees. Raise dumbbells out to sides with slight elbow bend, pinching shoulder blades together at top.',
-      'beginner',
-      'EA7u4Q_84es',
-      ['Rear Deltoids', 'Rhomboids'],
-      'Light Dumbbells'
-    ),
-    no_equipment: ex(
-      'Superman Hold', 3, '30 sec', '45s', 'Lower Back / Rear Delts',
-      'Lie face down on floor. Simultaneously lift chest, arms, and legs off ground. Hold at top for 30s squeezing glutes and back.',
-      'beginner',
-      'cc6UVRS7PW4',
-      ['Erector Spinae', 'Glutes', 'Rear Delts'],
-      'Floor Mat'
-    ),
-  },
-
-  // â”€â”€ Shoulders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€ Shoulders & Overhead â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   shoulder_press_compound: {
     full_gym: ex(
-      'Overhead Barbell Military Press', 4, '6-10', '90s', 'Shoulders',
-      'Stand with barbell at collarbone. Press barbell vertically overhead, locking out with biceps aligned near ears. Lower with control to upper chest.',
+      'Overhead Barbell Military Press / Machine Shoulder Press', 4, '6-10', '90s', 'Shoulders',
+      'Press barbell or machine handles vertically overhead, locking out with biceps aligned near ears. Lower with control to collarbone.',
       'intermediate',
       '2yjwXTZQDDI',
       ['Anterior Deltoids', 'Lateral Deltoids', 'Triceps', 'Core'],
-      'Barbell & Rack'
+      'Barbell & Rack / Shoulder Machine'
     ),
     dumbbells_only: ex(
       'Seated Dumbbell Shoulder Press', 4, '10-12', '75s', 'Shoulders',
@@ -449,12 +417,12 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
 
   shoulder_lateral: {
     full_gym: ex(
-      'Dumbbell Lateral Raise', 4, '12-15', '45s', 'Side Deltoids',
-      'Stand holding dumbbells at sides. Raise arms laterally to shoulder height with slight elbow bend. Lower under 2-second control.',
+      'Dumbbell / Cable Lateral Raise', 4, '12-15', '45s', 'Side Deltoids',
+      'Stand holding dumbbells or low cables at sides. Raise arms laterally to shoulder height with slight elbow bend. Lower under 2-second control.',
       'beginner',
       '3VcKaXpzqRo',
       ['Lateral Deltoid (Boulder Shoulders)'],
-      'Pair of Dumbbells'
+      'Pair of Dumbbells / Cable'
     ),
     dumbbells_only: ex(
       'Dumbbell Lateral Raise', 4, '12-15', '45s', 'Side Deltoids',
@@ -466,7 +434,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
     no_equipment: ex(
       'Lateral Arm Circles & Pulses', 3, '45 sec', '30s', 'Side Deltoids',
-      'Extend arms straight out to sides at shoulder height. Make small controlled circles for 45s continuously without dropping arms.',
+      'Extend arms straight out to sides at shoulder height. Make small controlled circles for 45s continuously.',
       'beginner',
       '140EXPBNXXU',
       ['Deltoids Endurance'],
@@ -474,74 +442,19 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Legs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  legs_squat: {
-    full_gym: ex(
-      'Barbell Back Squat', 4, '6-10', '90s', 'Quads / Glutes',
-      'Rest bar across upper traps. Stand shoulder-width, toes angled slightly out. Sit hips back and down until thighs are parallel to floor, then drive through mid-foot to stand.',
-      'intermediate',
-      'bEv6CCg2BC8',
-      ['Quadriceps', 'Gluteus Maximus', 'Adductors', 'Core'],
-      'Barbell & Squat Rack'
-    ),
-    dumbbells_only: ex(
-      'Dumbbell Goblet Squat', 4, '10-12', '75s', 'Quads / Glutes',
-      'Hold a heavy dumbbell vertically against chest with palms cupping the top plate. Squat down between knees, keeping torso upright.',
-      'beginner',
-      'MeIiIdhvXT4',
-      ['Quads', 'Glutes', 'Core'],
-      'Single Heavy Dumbbell'
-    ),
-    no_equipment: ex(
-      'Bodyweight Air Squat', 4, '15-20', '60s', 'Quads / Glutes',
-      'Stand with feet shoulder-width. Lower hips down and back below knee level, keeping heels planted, then drive back up to full standing.',
-      'beginner',
-      'aclHkVaku9U',
-      ['Quadriceps', 'Glutes', 'Hamstrings'],
-      'Bodyweight / Floor'
-    ),
-  },
-
-  legs_lunge: {
-    full_gym: ex(
-      'Walking Dumbbell Lunges', 3, '10-12 each', '60s', 'Quads / Glutes',
-      'Step forward with one leg, lowering hips until both knees are at 90 degrees. Drive off front heel to step into the next rep.',
-      'beginner',
-      'L8fvypPrzzs',
-      ['Quads', 'Glutes', 'Hamstrings', 'Balance'],
-      'Pair of Dumbbells'
-    ),
-    dumbbells_only: ex(
-      'Dumbbell Reverse Lunges', 3, '10-12 each', '60s', 'Quads / Glutes',
-      'Hold dumbbells at sides. Step backward with one leg and lower rear knee toward floor. Push through front foot to return.',
-      'beginner',
-      '7jA_RkgN3k0',
-      ['Quads', 'Glutes'],
-      'Pair of Dumbbells'
-    ),
-    no_equipment: ex(
-      'Walking Lunges (Bodyweight)', 3, '12-15 each', '60s', 'Quads / Glutes',
-      'Step forward in smooth walking cadence, dropping back knee gently toward floor. Keep torso upright.',
-      'beginner',
-      'wrwwXE_x-pQ',
-      ['Quads', 'Glutes'],
-      'Bodyweight'
-    ),
-  },
-
   // â”€â”€ Arms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   arms_biceps: {
     full_gym: ex(
-      'Barbell Bicep Curl', 3, '10-12', '60s', 'Biceps',
-      'Grip barbell shoulder-width, elbows tucked against ribs. Curl bar up towards shoulders, squeezing biceps at top. Lower over 2 seconds.',
+      'Barbell Bicep Curl / Preacher Machine Curl', 3, '10-12', '60s', 'Biceps',
+      'Grip barbell or machine handles shoulder-width. Curl upward towards shoulders, squeezing biceps at top. Lower over 2 seconds.',
       'beginner',
       'kwG2ipFRgfo',
       ['Biceps Brachii', 'Brachialis', 'Forearms'],
-      'Barbell / EZ Bar'
+      'Barbell / EZ Bar / Machine'
     ),
     dumbbells_only: ex(
       'Dumbbell Hammer Curl', 3, '10-12', '60s', 'Biceps / Forearms',
-      'Hold dumbbells with palms facing each other (neutral grip). Curl weights upward keeping wrists neutral, maximizing brachialis thickness.',
+      'Hold dumbbells with palms facing each other (neutral grip). Curl weights upward keeping wrists neutral.',
       'beginner',
       'zC3nLlEvin4',
       ['Brachialis', 'Biceps', 'Brachioradialis Forearm'],
@@ -576,7 +489,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
     no_equipment: ex(
       'Bench / Chair Triceps Dips', 3, '12-15', '45s', 'Triceps',
-      'Place hands on edge of chair behind you. Lower body by bending elbows to 90 degrees, then push through palms to lock out triceps.',
+      'Place hands on edge of chair behind you. Lower body by bending elbows to 90 degrees, then push through palms.',
       'beginner',
       '0326dy_-CzM',
       ['Triceps', 'Front Shoulders'],
@@ -587,7 +500,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
   // â”€â”€ Core / Abs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   core_plank: {
     full_gym: ex(
-      'Hanging Leg Raise', 3, '12-15', '60s', 'Core / Abs',
+      'Hanging Leg Raise / Cable Crunch', 3, '12-15', '60s', 'Core / Abs',
       'Hang from pull-up bar. Without swinging, lift knees or straight legs up to 90 degrees, tilting pelvis up into lower abs.',
       'intermediate',
       'hdng3Nm1x_E',
@@ -596,7 +509,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
     dumbbells_only: ex(
       'Dumbbell Russian Twist', 3, '20 total', '45s', 'Obliques / Abs',
-      'Sit on floor with knees bent and feet elevated. Rotate dumbbell from side to side touching the ground, engaging obliques.',
+      'Sit on floor with knees bent and feet elevated. Rotate dumbbell from side to side touching the ground.',
       'beginner',
       'wkD8rjkodUI',
       ['Internal & External Obliques', 'Rectus Abdominis'],
@@ -609,6 +522,34 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'ASdvN_XEl_c',
       ['Transverse Abdominis', 'Rectus Abdominis', 'Lower Back'],
       'Floor Mat'
+    ),
+  },
+
+  // â”€â”€ Stretching & Mobility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  stretching_full_body: {
+    full_gym: ex(
+      'Full Body Dynamic & Static Stretching Routine', 3, '30-45 sec per stretch', '15s', 'Mobility & Stretching',
+      'Head-to-toe stretching sequence: neck rolls, shoulder pass-throughs, cat-cow spine flexion, standing hamstring fold, hip flexor stretch, and butterfly.',
+      'beginner',
+      'L_xrDAtyPqI',
+      ['Full Body Mobility', 'Hamstrings', 'Hip Flexors', 'Chest', 'Spine'],
+      'Mat / Resistance Band'
+    ),
+    dumbbells_only: ex(
+      'Post-Workout Full Body Stretching', 3, '30 sec each', '15s', 'Mobility & Stretching',
+      'Standing quad stretch, cross-body shoulder stretch, downward dog calf stretch, world greatest stretch, and child pose.',
+      'beginner',
+      'L_xrDAtyPqI',
+      ['Hamstrings', 'Quadriceps', 'Shoulders', 'Lats'],
+      'Floor Mat'
+    ),
+    no_equipment: ex(
+      'Daily Full Body Stretching & Mobility', 3, '30-45 sec', '15s', 'Mobility & Stretching',
+      'Forward fold for hamstrings, cobra pose for abs/lower back, pigeon pose for glutes, and doorway chest stretch.',
+      'beginner',
+      'L_xrDAtyPqI',
+      ['Full Body Flexibility', 'Spine', 'Hips', 'Hamstrings'],
+      'Bodyweight / Floor'
     ),
   },
 };
@@ -633,6 +574,7 @@ export function generateWorkoutPlan(
       isRestDay: false,
       exercises: [
         getEx('chest_press_compound'),
+        getEx('chest_machine_press'),
         getEx('chest_incline'),
         getEx('chest_fly'),
         getEx('shoulder_press_compound'),
@@ -646,9 +588,8 @@ export function generateWorkoutPlan(
       isRestDay: false,
       exercises: [
         getEx('back_deadlift'),
-        getEx('back_compound_row'),
+        getEx('back_machine_row'),
         getEx('back_pulldown'),
-        getEx('back_face_pull'),
         getEx('arms_biceps'),
         getEx('core_plank'),
       ],
@@ -667,9 +608,9 @@ export function generateWorkoutPlan(
       isRestDay: false,
       exercises: [
         getEx('legs_squat'),
+        getEx('legs_machine_press'),
         getEx('legs_lunge'),
-        getEx('back_deadlift'),
-        getEx('shoulder_lateral'),
+        getEx('legs_machine_extension_curl'),
         getEx('core_plank'),
       ],
     },
@@ -678,8 +619,8 @@ export function generateWorkoutPlan(
       focus: 'Upper Body Hypertrophy',
       isRestDay: false,
       exercises: [
-        getEx('chest_press_compound'),
-        getEx('back_compound_row'),
+        getEx('chest_machine_press'),
+        getEx('back_machine_row'),
         getEx('shoulder_press_compound'),
         getEx('arms_biceps'),
         getEx('arms_triceps'),
@@ -690,10 +631,9 @@ export function generateWorkoutPlan(
       focus: 'Lower Body & Conditioning',
       isRestDay: false,
       exercises: [
-        getEx('legs_squat'),
+        getEx('legs_machine_press'),
         getEx('legs_lunge'),
         getEx('core_plank'),
-        getEx('stretching_lower_body'),
       ],
     },
     {
@@ -747,7 +687,52 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
     }
   }
 
-  // 2. Semantic Keyword Routing Fallback
+  // 2. Multi-word Tokenized Fuzzy Search
+  const tokens = q.split(/\s+/).filter(t => t.length > 2);
+  for (const slotKey of Object.keys(EXERCISE_DB)) {
+    const slot = EXERCISE_DB[slotKey];
+    for (const eq of ['full_gym', 'dumbbells_only', 'no_equipment'] as Equipment[]) {
+      const exItem = slot[eq];
+      const exLower = exItem.name.toLowerCase();
+      const matchCount = tokens.filter(t => exLower.includes(t)).length;
+      if (matchCount >= 2 || (tokens.length === 1 && matchCount === 1)) {
+        return {
+          name: exItem.name,
+          videoUrl: exItem.videoUrl,
+          muscleGroup: exItem.muscleGroup,
+          instructions: exItem.instructions,
+          targetMuscles: exItem.targetMuscles,
+          equipment: exItem.equipment,
+          tips: exItem.tips,
+          commonMistakes: exItem.commonMistakes,
+        };
+      }
+    }
+  }
+
+  // 3. Semantic Keyword Routing Fallback
+  if (q.includes('machine') && q.includes('chest')) {
+    return {
+      name: 'Machine Chest Press',
+      videoUrl: 'xUm0BiKGcwE',
+      muscleGroup: 'Chest',
+      instructions: 'Sit with handles at mid-chest height. Press forward smoothly until arms are nearly extended, lower with a 2-second control.',
+      targetMuscles: ['Pectoralis Major', 'Anterior Deltoids', 'Triceps'],
+      equipment: 'Seated Chest Press Machine',
+    };
+  }
+
+  if (q.includes('machine') && (q.includes('leg') || q.includes('press'))) {
+    return {
+      name: 'Leg Press Machine',
+      videoUrl: 'IZxyjW7MPJQ',
+      muscleGroup: 'Quads / Glutes',
+      instructions: 'Place feet shoulder-width on footplate. Lower platform to 90 degrees knee bend, press back up without locking knees.',
+      targetMuscles: ['Quadriceps', 'Glutes', 'Hamstrings'],
+      equipment: 'Leg Press Machine',
+    };
+  }
+
   if (q.includes('stretch') || q.includes('mobility') || q.includes('flexibility') || q.includes('yoga')) {
     return {
       name: 'Full Body Dynamic & Static Stretching',
@@ -768,40 +753,17 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
       instructions: 'Arm circles, leg swings, hip openers, and bodyweight squats to prime muscles and joints before training.',
       targetMuscles: ['Joints', 'Cardiovascular', 'Mobility'],
       equipment: 'Bodyweight',
-      tips: ['Gradually increase range of motion with each repetition.'],
     };
   }
 
-  if (q.includes('cardio') || q.includes('treadmill') || q.includes('running') || q.includes('walk') || q.includes('jog')) {
+  if (q.includes('cardio') || q.includes('treadmill') || q.includes('running') || q.includes('walk')) {
     return {
       name: 'Cardio & Incline Treadmill Walk',
       videoUrl: '3gK-mYmO6Qk',
       muscleGroup: 'Cardio & Conditioning',
-      instructions: 'Maintain steady pace at 10-12% incline or alternate jogging intervals for maximum caloric expenditure and heart health.',
+      instructions: 'Maintain steady pace at 10-12% incline or alternate jogging intervals for maximum caloric expenditure.',
       targetMuscles: ['Cardiovascular System', 'Calves', 'Glutes'],
       equipment: 'Treadmill / Track',
-    };
-  }
-
-  if (q.includes('jump rope') || q.includes('skipping')) {
-    return {
-      name: 'Jump Rope Conditioning',
-      videoUrl: 'u3zgHI8QnqE',
-      muscleGroup: 'Cardio & Calves',
-      instructions: 'Bounce lightly on the balls of your feet with wrists driving the rope.',
-      targetMuscles: ['Calves', 'Cardiovascular Endurance'],
-      equipment: 'Jump Rope',
-    };
-  }
-
-  if (q.includes('burpee')) {
-    return {
-      name: 'Burpees HIIT',
-      videoUrl: 'auBLPXO8Fww',
-      muscleGroup: 'Full Body HIIT',
-      instructions: 'Drop into plank, perform a pushup, jump feet back into hands and explode upward.',
-      targetMuscles: ['Full Body', 'Cardio', 'Chest', 'Quads'],
-      equipment: 'Bodyweight',
     };
   }
 
@@ -810,9 +772,9 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
       name: 'Bicep Curl',
       videoUrl: 'kwG2ipFRgfo',
       muscleGroup: 'Biceps',
-      instructions: 'Curl barbell or dumbbells upward squeezing biceps at peak contraction. Lower with a 2-second eccentric phase.',
+      instructions: 'Curl weight upward squeezing biceps at peak contraction. Lower with a 2-second eccentric phase.',
       targetMuscles: ['Biceps Brachii', 'Forearms'],
-      equipment: 'Dumbbells / Barbell',
+      equipment: 'Dumbbells / Barbell / Cable',
     };
   }
 
@@ -851,7 +813,7 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
 
   if (q.includes('row') || q.includes('pull') || q.includes('lat') || q.includes('back')) {
     return {
-      name: 'Back Row',
+      name: 'Back Row / Pulldown',
       videoUrl: '9efgc2Wg0PQ',
       muscleGroup: 'Back',
       instructions: 'Pull weight towards lower ribs driving elbows back and squeezing shoulder blades.',
