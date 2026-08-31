@@ -1,7 +1,7 @@
 ﻿'use client';
 import { useState, useEffect, useMemo } from 'react';
 import type { Exercise } from '@/lib/workout-engine';
-import { getAllPreloadedExercises, findExerciseVideo } from '@/lib/workout-engine';
+import { getAllPreloadedExercises, findExerciseVideo, normalizeGymQuery } from '@/lib/workout-engine';
 import Modal from '@/components/ui/Modal';
 import {
   Play,
@@ -115,9 +115,10 @@ export default function EditExerciseModal({
     setVideoCycleIndex(0);
     setDifficulty(exItem.difficulty);
     setSearchQuery('');
+    setPreviewVideo(true);
   };
 
-  // Handle typing custom name and auto-matching video + instructions
+  // Handle typing custom name and auto-matching video + instructions with typo correction
   const handleNameChange = (val: string) => {
     setName(val);
     const matched = findExerciseVideo(val, 0);
@@ -142,7 +143,7 @@ export default function EditExerciseModal({
       if (matched.alternativeVideos) setAlternativeVideos(matched.alternativeVideos);
       if (matched.muscleGroup) setMuscleGroup(matched.muscleGroup);
       if (matched.instructions) setInstructions(matched.instructions);
-      setPreviewVideo(true); // Open preview to verify video works immediately
+      setPreviewVideo(true);
     }
   };
 
@@ -167,8 +168,8 @@ export default function EditExerciseModal({
         setReps(ex.reps || '10-12');
         setRest(ex.rest || '60s');
         setInstructions(ex.instructions);
-        setVideoUrl(matched?.videoUrl || ex.videoUrl || 'xUm0BiKGcwE');
-        setAlternativeVideos(matched?.alternativeVideos || [matched?.videoUrl || 'xUm0BiKGcwE']);
+        setVideoUrl(matched?.videoUrl || ex.videoUrl || 'bEv6CCg2BC8');
+        setAlternativeVideos(matched?.alternativeVideos || ex.alternativeVideos || ['bEv6CCg2BC8', 'MeIiIdhvXT4']);
         setDifficulty(ex.difficulty || 'beginner');
         setSearchQuery('');
         setPreviewVideo(true);
@@ -195,8 +196,8 @@ export default function EditExerciseModal({
       rest: rest.trim() || '60s',
       instructions: instructions.trim() || `Perform ${name.trim()} with controlled form, proper breathing, and steady cadence.`,
       difficulty,
-      videoUrl: cleanYouTubeId || videoUrl.trim() || (matched?.videoUrl || 'xUm0BiKGcwE'),
-      alternativeVideos: alternativeVideos.length > 0 ? alternativeVideos : [cleanYouTubeId || videoUrl.trim() || 'xUm0BiKGcwE'],
+      videoUrl: cleanYouTubeId || videoUrl.trim() || (matched?.videoUrl || 'bEv6CCg2BC8'),
+      alternativeVideos: alternativeVideos.length > 0 ? alternativeVideos : [cleanYouTubeId || videoUrl.trim() || 'bEv6CCg2BC8'],
       targetMuscles: matched?.targetMuscles || [muscleGroup],
       equipment: matched?.equipment || 'Gym Equipment',
       tips: matched?.tips || ['Focus on controlled tempo and full range of motion.'],
@@ -206,17 +207,20 @@ export default function EditExerciseModal({
     onSave(savedExercise);
   };
 
-  // Tokenized multi-word search
+  // Typo-tolerant tokenized multi-word search
   const filteredLibrary = useMemo(() => {
     if (!searchQuery.trim()) return allLibraryExercises.slice(0, 10);
-    const q = searchQuery.toLowerCase().trim();
-    const tokens = q.split(/\s+/).filter(t => t.length > 1);
+    const rawQ = searchQuery.toLowerCase().trim();
+    const normQ = normalizeGymQuery(rawQ);
+    const tokens = normQ.split(/\s+/).filter(t => t.length > 1);
 
     return allLibraryExercises.filter(e => {
       const exName = e.name.toLowerCase();
+      const normExName = normalizeGymQuery(exName);
       const exMuscle = e.muscleGroup.toLowerCase();
-      if (exName.includes(q) || exMuscle.includes(q)) return true;
-      return tokens.every(t => exName.includes(t) || exMuscle.includes(t));
+
+      if (normExName.includes(normQ) || exMuscle.includes(normQ) || exName.includes(rawQ)) return true;
+      return tokens.every(t => normExName.includes(t) || exMuscle.includes(t));
     });
   }, [allLibraryExercises, searchQuery]);
 
@@ -240,7 +244,7 @@ export default function EditExerciseModal({
           <div className="relative">
             <input
               type="text"
-              placeholder="Search exercise (e.g. Machine Chest Press, Stretching, Leg Press, Lat Pulldown)..."
+              placeholder="Search exercise (e.g. Dumbbell Squats, Cardio, Machine Chest Press, Stretching)..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500"
@@ -250,12 +254,12 @@ export default function EditExerciseModal({
           {/* Quick Category Chips with Lucide Icons */}
           <div className="flex flex-wrap gap-1.5 pt-0.5">
             {[
+              { label: 'Cardio / HIIT', q: 'cardio', Icon: HeartPulse },
+              { label: 'Dumbbell Squats', q: 'dumbbell squat', Icon: Target },
+              { label: 'Chest Press', q: 'chest press', Icon: Dumbbell },
               { label: 'Stretching', q: 'stretching', Icon: Activity },
               { label: 'Warm-Up', q: 'warmup', Icon: Flame },
-              { label: 'Cardio / HIIT', q: 'cardio', Icon: HeartPulse },
-              { label: 'Chest Press', q: 'chest press', Icon: Dumbbell },
               { label: 'Back & Rows', q: 'row', Icon: Shield },
-              { label: 'Legs & Squats', q: 'squat', Icon: Target },
               { label: 'Biceps & Triceps', q: 'curl', Icon: Dumbbell },
               { label: 'Abs & Core', q: 'plank', Icon: Target },
             ].map(chip => {
@@ -360,7 +364,7 @@ export default function EditExerciseModal({
           <input
             type="text"
             required
-            placeholder="e.g. Machine Chest Press, Incline Bench Press, Leg Extension"
+            placeholder="e.g. Dumbbell Squats, Treadmill Running, Machine Chest Press"
             value={name}
             onChange={e => handleNameChange(e.target.value)}
             className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500 font-medium"
@@ -402,7 +406,7 @@ export default function EditExerciseModal({
             <Link2 className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
             <input
               type="text"
-              placeholder="e.g. xUm0BiKGcwE or https://www.youtube.com/watch?v=xUm0BiKGcwE"
+              placeholder="e.g. MeIiIdhvXT4 or https://www.youtube.com/watch?v=MeIiIdhvXT4"
               value={videoUrl}
               onChange={e => setVideoUrl(e.target.value)}
               className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg text-xs focus:outline-none focus:border-orange-500 font-mono text-[11px]"
@@ -444,8 +448,10 @@ export default function EditExerciseModal({
           {previewVideo && cleanYouTubeId && (
             <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border border-gray-600 shadow-md">
               <iframe
+                key={cleanYouTubeId}
                 src={`https://www.youtube-nocookie.com/embed/${cleanYouTubeId}?autoplay=0&rel=0&modestbranding=1`}
                 title="Exercise Demonstration Preview"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 className="w-full h-full object-cover"
               />
@@ -459,7 +465,7 @@ export default function EditExerciseModal({
             <label className="block text-gray-300 font-medium mb-1">Muscle Group / Category</label>
             <input
               type="text"
-              placeholder="e.g. Chest, Back, Quads, Mobility & Stretching, Biceps"
+              placeholder="e.g. Quads / Glutes, Cardio & Conditioning, Chest, Back"
               value={muscleGroup}
               onChange={e => setMuscleGroup(e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2"
@@ -484,7 +490,7 @@ export default function EditExerciseModal({
         <div className="grid grid-cols-3 gap-2.5 text-xs">
           <div>
             <label className="text-gray-300 font-medium mb-1 flex items-center gap-1">
-              <Layers className="w-3 h-3 text-orange-400" /> Sets
+              <Layers className="w-3.5 h-3.5 text-orange-400" /> Sets
             </label>
             <input
               type="number"
@@ -498,11 +504,11 @@ export default function EditExerciseModal({
 
           <div>
             <label className="text-gray-300 font-medium mb-1 flex items-center gap-1">
-              <Repeat className="w-3 h-3 text-blue-400" /> Reps / Duration
+              <Repeat className="w-3.5 h-3.5 text-blue-400" /> Reps / Duration
             </label>
             <input
               type="text"
-              placeholder="e.g. 8-12, 15, 30 sec"
+              placeholder="e.g. 10-12, 15 min, 45 sec"
               value={reps}
               onChange={e => setReps(e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-2.5 py-1.5"
@@ -511,7 +517,7 @@ export default function EditExerciseModal({
 
           <div>
             <label className="text-gray-300 font-medium mb-1 flex items-center gap-1">
-              <Clock className="w-3 h-3 text-green-400" /> Rest
+              <Clock className="w-3.5 h-3.5 text-green-400" /> Rest
             </label>
             <input
               type="text"

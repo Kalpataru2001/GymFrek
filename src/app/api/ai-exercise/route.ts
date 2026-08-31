@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { findExerciseVideo } from '@/lib/workout-engine';
+import { findExerciseVideo, normalizeGymQuery } from '@/lib/workout-engine';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,10 +8,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please provide an exercise name' }, { status: 400 });
     }
 
-    const q = query.trim();
+    const raw = query.trim();
+    const q = normalizeGymQuery(raw);
 
-    // 1. Check local semantic database first
-    const localMatch = findExerciseVideo(q);
+    // 1. Check local semantic database with normalized query
+    const localMatch = findExerciseVideo(q, 0);
 
     // 2. Check if Gemini API key is available for dynamic AI generation
     const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
@@ -19,22 +20,21 @@ export async function POST(req: NextRequest) {
     if (geminiKey) {
       try {
         const prompt = `You are a certified master fitness coach and exercise physiologist.
-Create a complete structured exercise guide for: "${q}"
+Create a complete structured exercise guide for: "${raw}" (which corresponds to "${q}")
 
 Return STRICT RAW JSON only (no markdown, no backticks) in this format:
 {
-  "name": "${q}",
-  "muscleGroup": "Primary muscle group (e.g. Chest, Back, Quads, Shoulders, Biceps, Mobility)",
+  "name": "${raw}",
+  "muscleGroup": "Primary muscle group (e.g. Chest, Back, Quads / Glutes, Shoulders, Biceps, Cardio & Conditioning, Mobility & Stretching)",
   "sets": 3,
   "reps": "8-12",
   "rest": "60s",
   "difficulty": "beginner" | "intermediate" | "advanced",
-  "equipment": "e.g. Seated Chest Press Machine / Cable / Barbell",
+  "equipment": "e.g. Pair of Dumbbells / Barbell / Machine / Bodyweight",
   "instructions": "Clear 2-3 sentence execution instructions covering setup, movement path, and breathing.",
   "targetMuscles": ["Primary Muscle", "Secondary Muscle 1", "Secondary Muscle 2"],
   "tips": ["Pro form cue 1", "Pro form cue 2"],
-  "commonMistakes": ["Common mistake 1", "Common mistake 2"],
-  "videoSearchQuery": "${q} exercise form tutorial"
+  "commonMistakes": ["Common mistake 1", "Common mistake 2"]
 }`;
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
@@ -55,7 +55,8 @@ Return STRICT RAW JSON only (no markdown, no backticks) in this format:
               success: true,
               exercise: {
                 ...parsed,
-                videoUrl: localMatch?.videoUrl || parsed.videoUrl || 'rT7DgCr-3pg',
+                videoUrl: localMatch?.videoUrl || 'bEv6CCg2BC8',
+                alternativeVideos: localMatch?.alternativeVideos || ['bEv6CCg2BC8', 'MeIiIdhvXT4', 'aclHkVaku9U'],
               },
               source: 'gemini_ai',
             });
@@ -67,30 +68,32 @@ Return STRICT RAW JSON only (no markdown, no backticks) in this format:
     }
 
     // 3. Smart Fallback Generator
-    const fallbackCategory = q.toLowerCase().includes('chest') ? 'Chest'
-      : q.toLowerCase().includes('back') || q.toLowerCase().includes('row') || q.toLowerCase().includes('lat') ? 'Back'
-      : q.toLowerCase().includes('leg') || q.toLowerCase().includes('squat') || q.toLowerCase().includes('quad') ? 'Quads / Legs'
-      : q.toLowerCase().includes('shoulder') || q.toLowerCase().includes('press') ? 'Shoulders'
-      : q.toLowerCase().includes('arm') || q.toLowerCase().includes('bicep') || q.toLowerCase().includes('curl') ? 'Biceps'
-      : q.toLowerCase().includes('tricep') || q.toLowerCase().includes('pushdown') ? 'Triceps'
-      : q.toLowerCase().includes('stretch') || q.toLowerCase().includes('mobility') ? 'Mobility & Stretching'
+    const fallbackCategory = q.includes('squat') || q.includes('leg') || q.includes('quad') ? 'Quads / Glutes'
+      : q.includes('cardio') || q.includes('treadmill') || q.includes('running') || q.includes('jump') ? 'Cardio & Conditioning'
+      : q.includes('chest') ? 'Chest'
+      : q.includes('back') || q.includes('row') || q.includes('lat') ? 'Back'
+      : q.includes('shoulder') || q.includes('press') ? 'Shoulders'
+      : q.includes('arm') || q.includes('bicep') || q.includes('curl') ? 'Biceps'
+      : q.includes('tricep') || q.includes('pushdown') ? 'Triceps'
+      : q.includes('stretch') || q.includes('mobility') ? 'Mobility & Stretching'
       : 'Full Body';
 
     return NextResponse.json({
       success: true,
       exercise: {
-        name: q,
+        name: raw,
         muscleGroup: localMatch?.muscleGroup || fallbackCategory,
         sets: localMatch?.sets || 3,
         reps: localMatch?.reps || '10-12',
         rest: localMatch?.rest || '60s',
         difficulty: localMatch?.difficulty || 'beginner',
-        equipment: localMatch?.equipment || 'Gym Machine / Free Weights',
-        instructions: localMatch?.instructions || `Set up on the ${q} with proper seat alignment. Engage core, control the weight through a full range of motion, and breathe out during exertion.`,
+        equipment: localMatch?.equipment || (q.includes('dumbbell') ? 'Pair of Dumbbells' : 'Gym Equipment'),
+        instructions: localMatch?.instructions || `Perform ${raw} with strict form, keeping your core braced and moving through a full range of motion.`,
         targetMuscles: localMatch?.targetMuscles || [fallbackCategory],
-        tips: localMatch?.tips || ['Maintain steady tempo with a 2-second lowering phase.', 'Do not lock out joints aggressively at peak extension.'],
-        commonMistakes: localMatch?.commonMistakes || ['Rushing through reps using momentum.'],
-        videoUrl: localMatch?.videoUrl || (q.toLowerCase().includes('machine') ? 'rT7DgCr-3pg' : 'L_xrDAtyPqI'),
+        tips: localMatch?.tips || ['Control the eccentric lowering phase for 2 seconds.', 'Breathe out on exertion.'],
+        commonMistakes: localMatch?.commonMistakes || ['Using momentum or rushing repetitions.'],
+        videoUrl: localMatch?.videoUrl || (q.includes('squat') ? 'MeIiIdhvXT4' : 'bEv6CCg2BC8'),
+        alternativeVideos: localMatch?.alternativeVideos || ['MeIiIdhvXT4', 'bEv6CCg2BC8', 'aclHkVaku9U'],
       },
       source: 'smart_local_nlp',
     });
