@@ -263,3 +263,102 @@ export function getBMIColor(bmi: number): string {
   if (bmi < 30)   return 'text-yellow-500'; // Overweight
   return 'text-red-500';                     // Obese
 }
+
+// ─── DAILY GROWTH SCORE ───────────────────────────────────────────────────────
+
+export interface DailyGrowthBreakdown {
+  score: number; // 0 to 100
+  workoutScore: number; // 0 to 40
+  proteinScore: number; // 0 to 35
+  calorieScore: number; // 0 to 25
+  grade: 'Elite' | 'Great' | 'Good' | 'Fair' | 'Needs Focus';
+  badgeColor: string;
+  summary: string;
+}
+
+/**
+ * Calculates a 0–100% daily fitness growth & consistency score.
+ * Combines 3 core pillars:
+ *  - Workout / Recovery consistency (40%)
+ *  - Protein target adherence (35%)
+ *  - Calorie target precision (25%)
+ */
+export function calculateDailyGrowthScore(
+  targets: { calories: number; protein: number },
+  actuals: { calories: number; protein: number },
+  attendance: 'completed' | 'rest' | 'missed' | 'none'
+): DailyGrowthBreakdown {
+  // 1. Workout / Rest Consistency (40 pts)
+  let workoutScore = 0;
+  if (attendance === 'completed' || attendance === 'rest') {
+    workoutScore = 40;
+  } else if (attendance === 'none') {
+    workoutScore = 10;
+  } else {
+    workoutScore = 0;
+  }
+
+  // 2. Protein Target Adherence (35 pts)
+  let proteinScore = 0;
+  if (targets.protein > 0 && actuals.protein > 0) {
+    const pRatio = actuals.protein / targets.protein;
+    if (pRatio >= 0.9 && pRatio <= 1.2) {
+      proteinScore = 35;
+    } else if (pRatio > 1.2) {
+      proteinScore = 32;
+    } else {
+      proteinScore = Math.round(Math.min(35, (pRatio / 0.9) * 35));
+    }
+  }
+
+  // 3. Calorie Precision (25 pts)
+  let calorieScore = 0;
+  if (targets.calories > 0 && actuals.calories > 0) {
+    const diffPct = Math.abs(actuals.calories - targets.calories) / targets.calories;
+    if (diffPct <= 0.08) {
+      calorieScore = 25;
+    } else if (diffPct <= 0.15) {
+      calorieScore = 20;
+    } else if (diffPct <= 0.25) {
+      calorieScore = 14;
+    } else if (diffPct <= 0.40) {
+      calorieScore = 8;
+    } else {
+      calorieScore = 4;
+    }
+  }
+
+  const score = Math.min(100, Math.max(0, workoutScore + proteinScore + calorieScore));
+
+  let grade: DailyGrowthBreakdown['grade'] = 'Needs Focus';
+  let badgeColor = 'text-red-400 bg-red-500/10 border-red-500/30';
+  let summary = 'Keep pushing! Log your full meals and check in your workout to boost your score.';
+
+  if (score >= 90) {
+    grade = 'Elite';
+    badgeColor = 'text-green-400 bg-green-500/10 border-green-500/30';
+    summary = '🌟 Outstanding day! Workout and nutrition are dialed in for peak muscle & fat progress.';
+  } else if (score >= 75) {
+    grade = 'Great';
+    badgeColor = 'text-orange-400 bg-orange-500/10 border-orange-500/30';
+    summary = '💪 Solid progress! High consistency driving real results.';
+  } else if (score >= 60) {
+    grade = 'Good';
+    badgeColor = 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+    summary = '⚡ Good effort. Hit your protein target to maximize your daily growth.';
+  } else if (score >= 40) {
+    grade = 'Fair';
+    badgeColor = 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+    summary = '👍 Partial tracking logged. Make sure to complete today\'s meal logs.';
+  }
+
+  return {
+    score,
+    workoutScore,
+    proteinScore,
+    calorieScore,
+    grade,
+    badgeColor,
+    summary,
+  };
+}

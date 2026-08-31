@@ -1,0 +1,649 @@
+﻿'use client';
+import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/contexts/UserContext';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { calculateDailyGrowthScore, DailyGrowthBreakdown } from '@/lib/calculations';
+import type { DailyLog, WorkoutAttendance, DayFoodItem } from '@/lib/types';
+import Modal from '@/components/ui/Modal';
+import ProgressBar from '@/components/ui/ProgressBar';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Toast from '@/components/ui/Toast';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  Moon,
+  Plus,
+  Trash2,
+  CalendarDays,
+  Target,
+  Trophy,
+  CheckCircle2,
+  Sparkles,
+} from 'lucide-react';
+
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
+
+export default function CalendarPage() {
+  const { user } = useAuth();
+  const { profile } = useUser();
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [logs, setLogs] = useState<Record<string, DailyLog>>({});
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  // Quick add food form state in modal
+  const [newFood, setNewFood] = useState<{
+    mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+    name: string;
+    servingG: number;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  }>({
+    mealType: 'lunch',
+    name: '',
+    servingG: 100,
+    calories: 150,
+    protein: 20,
+    carbs: 10,
+    fat: 3,
+    fiber: 2,
+  });
+  const [showAddFood, setShowAddFood] = useState(false);
+
+  // Month navigation
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth(); // 0-indexed
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const jumpToday = () => setCurrentDate(new Date());
+
+  // Fetch monthly logs from Firestore
+  const fetchMonthLogs = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-31`;
+
+      const q = query(
+        collection(db, 'dailyLogs'),
+        where('uid', '==', user.uid),
+        where('date', '>=', monthStart),
+        where('date', '<=', monthEnd)
+      );
+
+      const snap = await getDocs(q);
+      const logMap: Record<string, DailyLog> = {};
+      snap.forEach(d => {
+        const data = d.data() as DailyLog;
+        logMap[data.date] = data;
+      });
+      setLogs(logMap);
+    } catch (e) {
+      console.error('Failed to fetch calendar logs:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMonthLogs();
+  }, [user, year, month]);
+
+  // Target macros
+  const targets = useMemo(() => ({
+    calories: profile?.macros?.calories ?? 2000,
+    protein: profile?.macros?.protein ?? 140,
+    carbs: profile?.macros?.carbs ?? 200,
+    fat: profile?.macros?.fat ?? 60,
+    fiber: profile?.macros?.fiber ?? 30,
+  }), [profile]);
+
+  // Calendar math
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  // Adjust so Monday = 0, Sunday = 6
+  const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Month Statistics
+  const monthStats = useMemo(() => {
+    const entries = Object.values(logs);
+    const completedWorkouts = entries.filter(l => l.attendance === 'completed').length;
+    const restDays = entries.filter(l => l.attendance === 'rest').length;
+    const activeEntries = entries.filter(l => l.attendance !== 'none' || l.foods?.length > 0);
+    const avgScore = activeEntries.length > 0
+      ? Math.round(activeEntries.reduce((acc, l) => acc + (l.growthScore || 0), 0) / activeEntries.length)
+      : 0;
+
+    return {
+      completedWorkouts,
+      restDays,
+      trackedDays: activeEntries.length,
+      avgScore,
+    };
+  }, [logs]);
+
+  // Active day log
+  const activeLog = useMemo((): DailyLog => {
+    if (!selectedDate) {
+      return {
+        id: '',
+        uid: user?.uid ?? '',
+        date: '',
+        attendance: 'none',
+        foods: [],
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFat: 0,
+        totalFiber: 0,
+        growthScore: 0,
+      };
+    }
+    return logs[selectedDate] || {
+      id: `${user?.uid}_${selectedDate}`,
+      uid: user?.uid ?? '',
+      date: selectedDate,
+      attendance: 'none',
+      foods: [],
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFat: 0,
+      totalFiber: 0,
+      growthScore: 0,
+    };
+  }, [selectedDate, logs, user]);
+
+  // Recompute growth score for active log
+  const activeBreakdown: DailyGrowthBreakdown = useMemo(() => {
+    return calculateDailyGrowthScore(
+      { calories: targets.calories, protein: targets.protein },
+      { calories: activeLog.totalCalories, protein: activeLog.totalProtein },
+      activeLog.attendance
+    );
+  }, [activeLog, targets]);
+
+  // Save log update to Firestore
+  const saveLogUpdate = async (updated: DailyLog) => {
+    if (!user || !updated.date) return;
+    const breakdown = calculateDailyGrowthScore(
+      { calories: targets.calories, protein: targets.protein },
+      { calories: updated.totalCalories, protein: updated.totalProtein },
+      updated.attendance
+    );
+    const docData: DailyLog = {
+      ...updated,
+      growthScore: breakdown.score,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Optimistic UI update
+    setLogs(prev => ({ ...prev, [updated.date]: docData }));
+
+    const docRef = doc(db, 'dailyLogs', `${user.uid}_${updated.date}`);
+    await setDoc(docRef, docData, { merge: true });
+  };
+
+  // Toggle Attendance
+  const setAttendance = async (att: WorkoutAttendance) => {
+    if (!selectedDate) return;
+    const updated: DailyLog = {
+      ...activeLog,
+      attendance: att,
+    };
+    await saveLogUpdate(updated);
+    setToast({ message: `Attendance marked as ${att}!`, type: 'success' });
+  };
+
+  // Add Food Item
+  const handleAddFood = async () => {
+    if (!selectedDate || !newFood.name.trim()) return;
+    const item: DayFoodItem = {
+      id: `food_${Date.now()}`,
+      ...newFood,
+    };
+    const newFoods = [...(activeLog.foods || []), item];
+    const totalCalories = newFoods.reduce((sum, f) => sum + (f.calories || 0), 0);
+    const totalProtein = newFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
+    const totalCarbs = newFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
+    const totalFat = newFoods.reduce((sum, f) => sum + (f.fat || 0), 0);
+    const totalFiber = newFoods.reduce((sum, f) => sum + (f.fiber || 0), 0);
+
+    const updated: DailyLog = {
+      ...activeLog,
+      foods: newFoods,
+      totalCalories,
+      totalProtein,
+      totalCarbs,
+      totalFat,
+      totalFiber,
+    };
+
+    await saveLogUpdate(updated);
+    setShowAddFood(false);
+    setNewFood({
+      mealType: 'lunch',
+      name: '',
+      servingG: 100,
+      calories: 150,
+      protein: 20,
+      carbs: 10,
+      fat: 3,
+      fiber: 2,
+    });
+    setToast({ message: `Added ${item.name} to ${item.mealType}!`, type: 'success' });
+  };
+
+  // Remove Food Item
+  const handleRemoveFood = async (foodId: string) => {
+    const newFoods = (activeLog.foods || []).filter(f => f.id !== foodId);
+    const totalCalories = newFoods.reduce((sum, f) => sum + (f.calories || 0), 0);
+    const totalProtein = newFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
+    const totalCarbs = newFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
+    const totalFat = newFoods.reduce((sum, f) => sum + (f.fat || 0), 0);
+    const totalFiber = newFoods.reduce((sum, f) => sum + (f.fiber || 0), 0);
+
+    const updated: DailyLog = {
+      ...activeLog,
+      foods: newFoods,
+      totalCalories,
+      totalProtein,
+      totalCarbs,
+      totalFat,
+      totalFiber,
+    };
+    await saveLogUpdate(updated);
+    setToast({ message: 'Food entry removed', type: 'info' });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {/* Header & Controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2.5">
+            <CalendarDays className="w-7 h-7 text-orange-500" />
+            Attendance & Daily Growth Tracker
+          </h1>
+          <p className="text-gray-400 mt-1">
+            Check-in daily workouts, log your nutrition, and track your daily growth score
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={jumpToday}
+            className="px-3.5 py-2 text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 rounded-lg transition-colors"
+          >
+            Today
+          </button>
+          <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <button onClick={prevMonth} className="p-2 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors" aria-label="Previous Month">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="px-4 py-2 text-sm font-semibold text-white min-w-[140px] text-center">
+              {monthNames[month]} {year}
+            </span>
+            <button onClick={nextMonth} className="p-2 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors" aria-label="Next Month">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly Summary Stats Banner */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gray-800/80 border border-gray-700 rounded-xl p-4 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-lg bg-orange-500/20 text-orange-400">
+            <Flame className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium">Workouts Done</p>
+            <p className="text-2xl font-bold text-white">{monthStats.completedWorkouts} <span className="text-xs text-gray-400 font-normal">days</span></p>
+          </div>
+        </div>
+
+        <div className="bg-gray-800/80 border border-gray-700 rounded-xl p-4 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-lg bg-blue-500/20 text-blue-400">
+            <Moon className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium">Rest & Recovery</p>
+            <p className="text-2xl font-bold text-white">{monthStats.restDays} <span className="text-xs text-gray-400 font-normal">days</span></p>
+          </div>
+        </div>
+
+        <div className="bg-gray-800/80 border border-gray-700 rounded-xl p-4 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-lg bg-green-500/20 text-green-400">
+            <Trophy className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium">Avg Growth Score</p>
+            <p className="text-2xl font-bold text-white">{monthStats.avgScore}%</p>
+          </div>
+        </div>
+
+        <div className="bg-gray-800/80 border border-gray-700 rounded-xl p-4 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-lg bg-purple-500/20 text-purple-400">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 font-medium">Days Tracked</p>
+            <p className="text-2xl font-bold text-white">{monthStats.trackedDays} / {daysInMonth}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Grid Container */}
+      <div className="bg-gray-800 rounded-2xl border border-gray-700 p-5 shadow-xl">
+        {/* Days of Week Header */}
+        <div className="grid grid-cols-7 gap-2 mb-2 text-center">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+            <div key={d} className="text-xs font-bold text-gray-400 uppercase py-2">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Date Tiles Grid */}
+        {loading ? (
+          <div className="flex justify-center py-24"><LoadingSpinner size="lg" /></div>
+        ) : (
+          <div className="grid grid-cols-7 gap-2">
+            {/* Empty slots for previous month offset */}
+            {Array.from({ length: startOffset }).map((_, idx) => (
+              <div key={`empty-${idx}`} className="h-28 rounded-xl bg-gray-900/30 border border-gray-800/40 opacity-30" />
+            ))}
+
+            {/* Days in Month */}
+            {Array.from({ length: daysInMonth }).map((_, idx) => {
+              const dayNum = idx + 1;
+              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+              const log = logs[dateStr];
+              const isToday = dateStr === todayStr;
+              const hasCompleted = log?.attendance === 'completed';
+              const isRest = log?.attendance === 'rest';
+              const isMissed = log?.attendance === 'missed';
+              const score = log?.growthScore ?? 0;
+              const hasData = hasCompleted || isRest || isMissed || (log?.foods && log.foods.length > 0);
+
+              let scoreColor = 'text-gray-500 bg-gray-700/50';
+              if (score >= 80) scoreColor = 'text-green-400 bg-green-500/20';
+              else if (score >= 60) scoreColor = 'text-orange-400 bg-orange-500/20';
+              else if (score > 0) scoreColor = 'text-yellow-400 bg-yellow-500/20';
+
+              return (
+                <button
+                  key={dateStr}
+                  onClick={() => setSelectedDate(dateStr)}
+                  className={`relative flex flex-col justify-between h-28 p-2.5 rounded-xl border text-left transition-all duration-200 group hover:scale-[1.02] hover:border-orange-500/60 ${
+                    isToday
+                      ? 'border-orange-500 bg-orange-500/5 shadow-md shadow-orange-500/10'
+                      : 'border-gray-700 bg-gray-850 hover:bg-gray-750'
+                  }`}
+                >
+                  {/* Top Row: Date & Status Badge */}
+                  <div className="flex items-center justify-between w-full">
+                    <span className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>
+                      {dayNum}
+                      {isToday && <span className="ml-1 text-[10px] font-normal text-orange-400">Today</span>}
+                    </span>
+
+                    {/* Attendance Icon */}
+                    {hasCompleted && (
+                      <span className="flex items-center text-xs font-semibold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded" title="Workout Completed">
+                        🔥 Done
+                      </span>
+                    )}
+                    {isRest && (
+                      <span className="flex items-center text-xs font-semibold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded" title="Rest Day">
+                        😴 Rest
+                      </span>
+                    )}
+                    {isMissed && (
+                      <span className="flex items-center text-xs font-semibold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded" title="Missed Workout">
+                        ❌ Missed
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Middle Row: Calorie / Food Info */}
+                  <div className="w-full space-y-0.5">
+                    {log && log.totalCalories > 0 ? (
+                      <>
+                        <p className="text-[11px] font-medium text-gray-300 truncate">
+                          {log.totalCalories} <span className="text-[9px] text-gray-400">kcal</span>
+                        </p>
+                        <p className="text-[10px] text-orange-300 font-semibold truncate">
+                          {log.totalProtein}g <span className="text-[9px] text-gray-400">protein</span>
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-gray-500 italic group-hover:text-gray-400">Click to log</p>
+                    )}
+                  </div>
+
+                  {/* Bottom Row: Daily Growth Score */}
+                  <div className="w-full flex items-center justify-between pt-1 border-t border-gray-700/50">
+                    <span className="text-[9px] text-gray-400 font-medium">Growth</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${hasData ? scoreColor : 'text-gray-500'}`}>
+                      {hasData ? `${score}%` : '—'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ─── Day Inspector & Log Modal ─────────────────────────────────────── */}
+      <Modal
+        isOpen={!!selectedDate}
+        onClose={() => { setSelectedDate(null); setShowAddFood(false); }}
+        title={selectedDate ? `Log & Progress for ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}` : ''}
+        size="lg"
+      >
+        <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
+          {/* Section 1: Workout Attendance Check-In */}
+          <div className="bg-gray-750 p-4 rounded-xl border border-gray-700 space-y-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Target className="w-4 h-4 text-orange-400" />
+              Workout Attendance Check-In
+            </h3>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { val: 'completed', label: '🔥 Workout Done', activeCls: 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' },
+                { val: 'rest', label: '😴 Rest Day', activeCls: 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' },
+                { val: 'missed', label: '❌ Missed', activeCls: 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20' },
+              ].map(opt => (
+                <button
+                  key={opt.val}
+                  type="button"
+                  onClick={() => setAttendance(opt.val as WorkoutAttendance)}
+                  className={`py-2.5 px-3 rounded-lg text-xs font-semibold border transition-all ${
+                    activeLog.attendance === opt.val
+                      ? opt.activeCls
+                      : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Daily Growth Score Card */}
+          <div className={`p-4 rounded-xl border ${activeBreakdown.badgeColor}`}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-300">Daily Growth Score</span>
+                <h4 className="text-2xl font-extrabold text-white mt-0.5">
+                  {activeBreakdown.score}% <span className="text-sm font-semibold text-gray-200">({activeBreakdown.grade})</span>
+                </h4>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-gray-300 block">Workout: {activeBreakdown.workoutScore}/40</span>
+                <span className="text-xs text-gray-300 block">Protein: {activeBreakdown.proteinScore}/35</span>
+                <span className="text-xs text-gray-300 block">Calories: {activeBreakdown.calorieScore}/25</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-200 mb-3">{activeBreakdown.summary}</p>
+
+            {/* Micro progress bars */}
+            <div className="space-y-1.5 pt-1 border-t border-gray-700/50">
+              <ProgressBar label={`Protein: ${activeLog.totalProtein}g / ${targets.protein}g target`} value={activeLog.totalProtein} max={targets.protein} color="orange" height="sm" />
+              <ProgressBar label={`Calories: ${activeLog.totalCalories} kcal / ${targets.calories} kcal budget`} value={activeLog.totalCalories} max={targets.calories} color="blue" height="sm" />
+            </div>
+          </div>
+
+          {/* Section 3: Meals & Foods Eaten Today */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-orange-400" />
+                Foods Eaten on This Day
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddFood(s => !s)}
+                className="inline-flex items-center gap-1 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {showAddFood ? 'Close Form' : 'Log Food'}
+              </button>
+            </div>
+
+            {/* Quick Add Food Form */}
+            {showAddFood && (
+              <div className="bg-gray-750 p-4 rounded-xl border border-orange-500/40 space-y-3">
+                <h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider">Quick Food Entry</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1">Meal Time</label>
+                    <select
+                      value={newFood.mealType}
+                      onChange={e => setNewFood(p => ({ ...p, mealType: e.target.value as any }))}
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500 capitalize"
+                    >
+                      {MEAL_TYPES.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1">Food Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 200g Chicken Breast"
+                      value={newFood.name}
+                      onChange={e => setNewFood(p => ({ ...p, name: e.target.value }))}
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1">Calories (kcal)</label>
+                    <input
+                      type="number"
+                      value={newFood.calories}
+                      onChange={e => setNewFood(p => ({ ...p, calories: Number(e.target.value) }))}
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1">Protein (g)</label>
+                    <input
+                      type="number"
+                      value={newFood.protein}
+                      onChange={e => setNewFood(p => ({ ...p, protein: Number(e.target.value) }))}
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1">Carbs (g)</label>
+                    <input
+                      type="number"
+                      value={newFood.carbs}
+                      onChange={e => setNewFood(p => ({ ...p, carbs: Number(e.target.value) }))}
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1">Fat (g)</label>
+                    <input
+                      type="number"
+                      value={newFood.fat}
+                      onChange={e => setNewFood(p => ({ ...p, fat: Number(e.target.value) }))}
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddFood}
+                  disabled={!newFood.name.trim()}
+                  className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2 rounded-lg text-xs transition-colors"
+                >
+                  ✓ Add Food to {newFood.mealType}
+                </button>
+              </div>
+            )}
+
+            {/* List of Logged Foods */}
+            {activeLog.foods && activeLog.foods.length > 0 ? (
+              <div className="space-y-2">
+                {activeLog.foods.map(food => (
+                  <div key={food.id} className="flex items-center justify-between bg-gray-700/70 p-3 rounded-lg border border-gray-600/60">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-bold text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded">
+                          {food.mealType}
+                        </span>
+                        <p className="text-xs font-semibold text-white">{food.name}</p>
+                      </div>
+                      <p className="text-[11px] text-gray-300 mt-1">
+                        {food.calories} kcal · <strong className="text-orange-300">{food.protein}g P</strong> · {food.carbs}g C · {food.fat}g F
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleRemoveFood(food.id)}
+                      className="text-gray-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-gray-600 transition-colors"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 bg-gray-700/30 p-4 rounded-lg text-center border border-gray-700">
+                No meals logged for this day yet. Click <strong>Log Food</strong> above to add what you ate!
+              </p>
+            )}
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}

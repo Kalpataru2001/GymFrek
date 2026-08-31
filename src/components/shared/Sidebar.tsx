@@ -2,10 +2,11 @@
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Dumbbell, Salad, Calculator, TrendingUp, ListChecks, UserCircle2, Zap } from 'lucide-react';
+import { LayoutDashboard, Dumbbell, Salad, Calculator, TrendingUp, ListChecks, UserCircle2, Zap, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 const NAV=[
   {label:'Dashboard',href:'/dashboard',Icon:LayoutDashboard},
+  {label:'Attendance & Logs',href:'/calendar',Icon:CalendarDays},
   {label:'Workout',href:'/workout',Icon:Dumbbell},
   {label:'Nutrition',href:'/nutrition',Icon:Salad},
   {label:'Food Calculator',href:'/nutrition/food-calculator',Icon:Calculator},

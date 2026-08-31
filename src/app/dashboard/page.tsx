@@ -78,16 +78,18 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Dumbbell className="w-5 h-5 text-orange-400"/>Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
+              {label:'Mark Attendance',href:'/calendar',emoji:'📅'},
               {label:'View Workout Plan',href:'/workout',emoji:'🏋️'},
               {label:'Log a Meal',href:'/nutrition/food-calculator',emoji:'🥗'},
+              {label:'Daily Growth Score',href:'/calendar',emoji:'⚡'},
               {label:'Track Progress',href:'/progress',emoji:'📊'},
               {label:'Exercise Library',href:'/exercises',emoji:'💪'},
             ].map(a=>(
-              <Link key={a.href} href={a.href} className="flex flex-col items-center justify-center gap-2 p-4 bg-gray-700 hover:bg-gray-600 rounded-xl transition-colors text-center">
+              <Link key={a.label} href={a.href} className="flex flex-col items-center justify-center gap-2 p-3.5 bg-gray-700 hover:bg-gray-600 rounded-xl transition-colors text-center">
                 <span className="text-2xl">{a.emoji}</span>
-                <span className="text-sm font-medium text-gray-200">{a.label}</span>
+                <span className="text-xs font-medium text-gray-200">{a.label}</span>
               </Link>
             ))}
           </div>

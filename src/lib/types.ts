@@ -126,3 +126,36 @@ export interface MealLog {
   fiber: number;
   createdAt: string;
 }
+
+// ─── Daily Calendar & Attendance Log ──────────────────────────────────────────
+
+export type WorkoutAttendance = 'completed' | 'rest' | 'missed' | 'none';
+
+export interface DayFoodItem {
+  id: string;
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  name: string;
+  servingG?: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+export interface DailyLog {
+  id: string; // ${uid}_${YYYY-MM-DD}
+  uid: string;
+  date: string; // YYYY-MM-DD
+  attendance: WorkoutAttendance;
+  workoutTitle?: string;
+  workoutNotes?: string;
+  foods: DayFoodItem[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  totalFiber: number;
+  growthScore: number; // 0 - 100
+  updatedAt?: string;
+}
