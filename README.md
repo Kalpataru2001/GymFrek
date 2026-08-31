@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💪 GymFrek
 
-## Getting Started
+A comprehensive, full-stack fitness and nutrition web application designed for both gym enthusiasts and health-conscious individuals. **GymFrek** calculates personalized workout plans, BMI, BMR, TDEE, macro nutrient breakdowns, and tracks your daily food, weight, and fitness progress.
 
-First, run the development server:
+---
 
-```bash
+## ✨ Features
+
+- 🏋️ **Smart Workout Plan Generator**: Custom weekly schedules based on experience level (Beginner, Intermediate, Advanced), goals, and available equipment (Full Gym, Dumbbells, Bodyweight).
+- 🥗 **Nutrition & Macro Planner**: Goal-specific calorie, protein, carbohydrate, fat, dietary fiber, and water targets.
+- 🔍 **USDA Food Database Integration**: Search over 300,000+ foods with instant calorie & macronutrient scaling.
+- 🍽️ **Meal Logging**: Track breakfast, lunch, dinner, and snacks with accurate nutrient breakdowns.
+- 📊 **Progress & Weight Tracking**: Interactive weight progress charts powered by Recharts, BMI gauges, and milestone achievements.
+- 👤 **Interactive Profile**: Body metric recalculation, password resets, and fitness goal adjustments.
+- 🔒 **Firebase Authentication**: Seamless Google One-Tap/Popup and Email/Password sign-in.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Authentication & Database**: [Firebase Auth](https://firebase.google.com/docs/auth) & [Cloud Firestore](https://firebase.google.com/docs/firestore)
+- **Charts**: [Recharts](https://recharts.org/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Food Data**: [USDA FoodData Central API](https://fdc.nal.usda.gov/)
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+`ash
+git clone https://github.com/Kalpataru2001/GymFrek.git
+cd GymFrek
+`
+
+### 2. Install dependencies
+`ash
+npm install
+`
+
+### 3. Setup Environment Variables
+Create a .env.local file in the root directory (refer to .env.example):
+
+`nv
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
+
+# USDA FoodData Central API Key (Optional)
+NEXT_PUBLIC_USDA_API_KEY=DEMO_KEY
+`
+
+### 4. Run the development server
+`ash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📜 License
+This project is open source and available under the MIT License.

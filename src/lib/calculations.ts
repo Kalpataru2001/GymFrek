@@ -1,0 +1,173 @@
+/**
+ * GymFrek — Health & Fitness Calculation Utilities
+ * Provides BMI, BMR, TDEE, Macro, and color-coding helpers.
+ */
+
+// ─── BMI ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Calculates Body Mass Index and returns the value + category label.
+ * @param weightKg  Body weight in kilograms
+ * @param heightCm  Height in centimetres
+ */
+export function calculateBMI(
+  weightKg: number,
+  heightCm: number
+): { bmi: number; category: string } {
+  const heightM = heightCm / 100;
+  const bmi = parseFloat((weightKg / (heightM * heightM)).toFixed(1));
+
+  let category: string;
+  if (bmi < 18.5) {
+    category = 'Underweight';
+  } else if (bmi < 25) {
+    category = 'Normal';
+  } else if (bmi < 30) {
+    category = 'Overweight';
+  } else {
+    category = 'Obese';
+  }
+
+  return { bmi, category };
+}
+
+// ─── BMR ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Calculates Basal Metabolic Rate using the Mifflin-St Jeor equation.
+ * @param weightKg  Body weight in kilograms
+ * @param heightCm  Height in centimetres
+ * @param age       Age in years
+ * @param gender    'male' | 'female'
+ * @returns         BMR in kcal/day (rounded integer)
+ */
+export function calculateBMR(
+  weightKg: number,
+  heightCm: number,
+  age: number,
+  gender: 'male' | 'female'
+): number {
+  // Mifflin-St Jeor: (10 × weight kg) + (6.25 × height cm) − (5 × age) + S
+  // S = +5 for male, −161 for female
+  const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
+  const bmr = gender === 'male' ? base + 5 : base - 161;
+  return Math.round(bmr);
+}
+
+// ─── TDEE ────────────────────────────────────────────────────────────────────
+
+/** Activity multipliers (Harris-Benedict standard) */
+const ACTIVITY_MULTIPLIERS: Record<string, number> = {
+  sedentary: 1.2,    // little or no exercise
+  light: 1.375,      // light exercise 1-3 days/week
+  moderate: 1.55,    // moderate exercise 3-5 days/week
+  active: 1.725,     // hard exercise 6-7 days/week
+  very_active: 1.9,  // very hard exercise + physical job
+};
+
+/**
+ * Calculates Total Daily Energy Expenditure.
+ * @param bmr           Basal Metabolic Rate in kcal
+ * @param activityLevel Activity level key
+ * @returns             TDEE in kcal/day (rounded integer)
+ */
+export function calculateTDEE(
+  bmr: number,
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+): number {
+  return Math.round(bmr * ACTIVITY_MULTIPLIERS[activityLevel]);
+}
+
+// ─── MACROS ──────────────────────────────────────────────────────────────────
+
+export interface MacroResult {
+  calories: number;
+  protein: number; // grams
+  carbs: number;   // grams
+  fat: number;     // grams
+  fiber: number;   // grams
+  water: number;   // ml
+}
+
+/**
+ * Calculates daily macro targets based on TDEE and goal.
+ *
+ * Goal calorie adjustments:
+ *  - lose_weight  : −500 kcal deficit (floor: 1200 kcal)
+ *  - maintain     : TDEE as-is
+ *  - gain_muscle  : +300 kcal surplus
+ *
+ * Macro split (protein % / fat % / carbs %):
+ *  - lose_weight  : 35 / 30 / 35
+ *  - maintain     : 30 / 30 / 40
+ *  - gain_muscle  : 30 / 25 / 45
+ *
+ * Fiber  : ~14g per 1000 kcal, clamped to 25–38g
+ * Water  : 35ml × bodyweight kg; fallback 2500ml when weight is absent
+ *
+ * @param tdee      Total Daily Energy Expenditure in kcal
+ * @param goal      Fitness goal
+ * @param weightKg  Optional body weight used for water calculation
+ */
+export function calculateMacros(
+  tdee: number,
+  goal: 'lose_weight' | 'maintain' | 'gain_muscle' | 'improve_fitness',
+  weightKg?: number
+): MacroResult {
+  let targetCalories: number;
+  let proteinPct: number;
+  let fatPct: number;
+  let carbPct: number;
+
+  switch (goal) {
+    case 'lose_weight':
+      targetCalories = tdee - 500;
+      proteinPct = 0.35;
+      fatPct = 0.30;
+      carbPct = 0.35;
+      break;
+    case 'gain_muscle':
+      targetCalories = tdee + 300;
+      proteinPct = 0.30;
+      fatPct = 0.25;
+      carbPct = 0.45;
+      break;
+    case 'maintain':
+    default:
+      targetCalories = tdee;
+      proteinPct = 0.30;
+      fatPct = 0.30;
+      carbPct = 0.40;
+      break;
+  }
+
+  // Enforce a safe calorie floor
+  targetCalories = Math.max(targetCalories, 1200);
+
+  // Protein & Carbs = 4 kcal/g, Fat = 9 kcal/g
+  const protein = Math.round((targetCalories * proteinPct) / 4);
+  const fat = Math.round((targetCalories * fatPct) / 9);
+  const carbs = Math.round((targetCalories * carbPct) / 4);
+
+  // Fiber: ~14g per 1000 kcal, clamped between 25g and 38g
+  const rawFiber = Math.round((targetCalories / 1000) * 14);
+  const fiber = Math.min(Math.max(rawFiber, 25), 38);
+
+  // Water: 35ml/kg body weight; default 2500ml
+  const water = weightKg ? Math.round(weightKg * 35) : 2500;
+
+  return { calories: targetCalories, protein, carbs, fat, fiber, water };
+}
+
+// ─── BMI COLOR ───────────────────────────────────────────────────────────────
+
+/**
+ * Returns a Tailwind CSS text-color class based on BMI value.
+ * @param bmi  BMI value
+ */
+export function getBMIColor(bmi: number): string {
+  if (bmi < 18.5) return 'text-blue-500';   // Underweight
+  if (bmi < 25)   return 'text-green-500';  // Normal
+  if (bmi < 30)   return 'text-yellow-500'; // Overweight
+  return 'text-red-500';                     // Obese
+}
