@@ -362,3 +362,121 @@ export function calculateDailyGrowthScore(
     summary,
   };
 }
+
+// ─── DYNAMIC CALENDAR COLOR CODING & HEALTH STATUS ──────────────────────────
+
+export type DayHealthStatusType =
+  | 'champion'         // Emerald Green: Workout Done + On Target Nutrition
+  | 'good_effort'      // Amber / Gold: Solid effort & consistency
+  | 'recovery_clean'   // Sky Blue: Rest Day with clean nutrition
+  | 'high_fat_warning' // Purple / Fuchsia: Fat/Calorie border crossed without workout
+  | 'missed_warning'   // Rose / Red: Missed workout or under-fueled
+  | 'unlogged';        // Slate Gray: No activity logged
+
+export interface DayHealthVisual {
+  type: DayHealthStatusType;
+  label: string;
+  shortTag: string;
+  tileClass: string;
+  badgeClass: string;
+  growthColor: string;
+  dotColor: string;
+  description: string;
+}
+
+export function getDayHealthStatus(
+  targets: { calories: number; protein: number; fat?: number },
+  actuals: { calories: number; protein: number; fat?: number },
+  attendance: 'completed' | 'rest' | 'missed' | 'none',
+  score: number
+): DayHealthVisual {
+  const hasLoggedFood = (actuals.calories || 0) > 0;
+  const hasLoggedWorkout = attendance === 'completed' || attendance === 'rest' || attendance === 'missed';
+
+  if (!hasLoggedFood && !hasLoggedWorkout) {
+    return {
+      type: 'unlogged',
+      label: 'Unlogged',
+      shortTag: 'Unlogged',
+      tileClass: 'border-gray-750 bg-gray-850/60 hover:bg-gray-800 hover:border-gray-600',
+      badgeClass: 'text-gray-400 bg-gray-700/50',
+      growthColor: 'text-gray-500',
+      dotColor: 'bg-gray-600',
+      description: 'No activity logged for this day yet.',
+    };
+  }
+
+  // 1. Check for High Calorie / Fat Surplus Spike (exceeded border without workout)
+  const targetCal = targets.calories || 2000;
+  const targetFat = targets.fat || (targetCal * 0.25) / 9; // ~25% fat target in grams
+  const isHighCalorieSpike = (actuals.calories || 0) > targetCal * 1.25; // >25% over calorie budget
+  const isHighFatSpike = (actuals.fat || 0) > targetFat * 1.30; // >30% over fat target
+
+  if ((isHighCalorieSpike || isHighFatSpike) && attendance !== 'completed') {
+    return {
+      type: 'high_fat_warning',
+      label: 'High Fat / Surplus Spike',
+      shortTag: 'Fat / Calorie Spike',
+      tileClass: 'border-purple-500/80 bg-purple-950/25 hover:border-purple-400 hover:bg-purple-950/35 shadow-sm shadow-purple-500/15',
+      badgeClass: 'text-purple-300 bg-purple-500/20 border border-purple-500/40',
+      growthColor: 'text-purple-300 bg-purple-500/20',
+      dotColor: 'bg-purple-500',
+      description: 'Calorie or fat limit exceeded significantly without an exercise session.',
+    };
+  }
+
+  // 2. Clean Rest Day
+  if (attendance === 'rest') {
+    return {
+      type: 'recovery_clean',
+      label: 'Clean Rest & Recovery',
+      shortTag: 'Rest Day',
+      tileClass: 'border-sky-500/70 bg-sky-950/25 hover:border-sky-400 hover:bg-sky-950/35 shadow-sm shadow-sky-500/15',
+      badgeClass: 'text-sky-300 bg-sky-500/20 border border-sky-500/40',
+      growthColor: 'text-sky-300 bg-sky-500/20',
+      dotColor: 'bg-sky-500',
+      description: 'Active recovery with muscle regeneration and balanced nutrition.',
+    };
+  }
+
+  // 3. Champion / Optimal Growth Day (Workout completed + on-target nutrition >= 75%)
+  if (attendance === 'completed' && score >= 75) {
+    return {
+      type: 'champion',
+      label: 'Champion Day (Optimal Growth)',
+      shortTag: 'Optimal Growth',
+      tileClass: 'border-emerald-500/80 bg-emerald-950/25 hover:border-emerald-400 hover:bg-emerald-950/35 shadow-sm shadow-emerald-500/20',
+      badgeClass: 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/40',
+      growthColor: 'text-emerald-300 bg-emerald-500/20',
+      dotColor: 'bg-emerald-500',
+      description: 'Workout crushed and protein & calorie targets dialed in for maximum growth!',
+    };
+  }
+
+  // 4. Good Effort Day (Moderate progress)
+  if (score >= 50 || attendance === 'completed') {
+    return {
+      type: 'good_effort',
+      label: 'Solid Progress',
+      shortTag: 'Solid Effort',
+      tileClass: 'border-amber-500/70 bg-amber-950/25 hover:border-amber-400 hover:bg-amber-950/35 shadow-sm shadow-amber-500/15',
+      badgeClass: 'text-amber-300 bg-amber-500/20 border border-amber-500/40',
+      growthColor: 'text-amber-300 bg-amber-500/20',
+      dotColor: 'bg-amber-500',
+      description: 'Good consistency! A few tweaks to protein or calories will unlock top tier growth.',
+    };
+  }
+
+  // 5. Missed or Inactive Warning
+  return {
+    type: 'missed_warning',
+    label: 'Needs Focus / Inactive',
+    shortTag: 'Needs Focus',
+    tileClass: 'border-rose-500/70 bg-rose-950/25 hover:border-rose-400 hover:bg-rose-950/35 shadow-sm shadow-rose-500/15',
+    badgeClass: 'text-rose-300 bg-rose-500/20 border border-rose-500/40',
+    growthColor: 'text-rose-300 bg-rose-500/20',
+    dotColor: 'bg-rose-500',
+    description: 'Missed workout or under-fueled nutrition. Time to bounce back tomorrow!',
+  };
+}
+

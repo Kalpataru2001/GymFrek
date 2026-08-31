@@ -4,7 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
-import { calculateDailyGrowthScore, DailyGrowthBreakdown } from '@/lib/calculations';
+import {
+  calculateDailyGrowthScore,
+  DailyGrowthBreakdown,
+  getDayHealthStatus,
+  DayHealthVisual,
+} from '@/lib/calculations';
 import {
   POPULAR_FOODS_DATABASE,
   FoodEntry,
@@ -37,12 +42,14 @@ import {
   Edit3,
   Bot,
   Loader2,
+  AlertTriangle,
+  Zap,
+  Info,
 } from 'lucide-react';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 type EntryMode = 'smart_search' | 'ai_assistant' | 'manual';
 
-// Local timezone safe date helper (YYYY-MM-DD)
 function formatToLocalDateString(d: Date = new Date()): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -96,15 +103,13 @@ export default function CalendarPage() {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const jumpToday = () => setCurrentDate(new Date());
 
-  // Storage key
   const storageKey = user ? `gymfrek_logs_${user.uid}` : null;
 
-  // Fetch monthly logs with local cache fallback
+  // Fetch monthly logs
   const fetchMonthLogs = useCallback(async () => {
     if (!user) return;
     setLoading(true);
 
-    // 1. Instant load from local storage
     if (storageKey) {
       try {
         const cached = localStorage.getItem(storageKey);
@@ -116,7 +121,6 @@ export default function CalendarPage() {
       }
     }
 
-    // 2. Fetch from Firestore without composite range requirement
     try {
       const q = query(
         collection(db, 'dailyLogs'),
@@ -132,7 +136,6 @@ export default function CalendarPage() {
         }
       });
 
-      // Update state and save to local storage
       setLogs(prev => {
         const merged = { ...prev, ...logMap };
         if (storageKey) {
@@ -237,7 +240,16 @@ export default function CalendarPage() {
     );
   }, [activeLog, targets]);
 
-  // Save log update to State, Local Storage, and Firestore
+  const activeDayVisual: DayHealthVisual = useMemo(() => {
+    return getDayHealthStatus(
+      { calories: targets.calories, protein: targets.protein, fat: targets.fat },
+      { calories: activeLog.totalCalories, protein: activeLog.totalProtein, fat: activeLog.totalFat },
+      activeLog.attendance,
+      activeBreakdown.score
+    );
+  }, [targets, activeLog, activeBreakdown]);
+
+  // Save log update
   const saveLogUpdate = async (updated: DailyLog) => {
     if (!user || !updated.date) return;
     const breakdown = calculateDailyGrowthScore(
@@ -338,7 +350,7 @@ export default function CalendarPage() {
     }
   };
 
-  // Add Logged Food Item (from Smart Search, AI, or Manual)
+  // Add Logged Food Item
   const handleAddFoodToDay = async () => {
     if (!selectedDate) return;
 
@@ -449,10 +461,10 @@ export default function CalendarPage() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2.5">
             <CalendarDays className="w-7 h-7 text-orange-500" />
-            Attendance & Daily Growth Tracker
+            Attendance & Health Heatmap Calendar
           </h1>
           <p className="text-gray-400 mt-1">
-            Track daily meals, calories, protein, and workout consistency with instant growth scoring
+            Dynamic health coloring based on your workouts, protein adherence & calorie/fat balance
           </p>
         </div>
 
@@ -500,7 +512,7 @@ export default function CalendarPage() {
         </div>
 
         <div className="bg-gray-800/80 border border-gray-700 rounded-xl p-4 flex items-center gap-3.5">
-          <div className="p-2.5 rounded-lg bg-green-500/20 text-green-400">
+          <div className="p-2.5 rounded-lg bg-emerald-500/20 text-emerald-400">
             <Trophy className="w-6 h-6" />
           </div>
           <div>
@@ -521,8 +533,8 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Grid Container */}
-      <div className="bg-gray-800 rounded-2xl border border-gray-700 p-5 shadow-xl">
-        <div className="grid grid-cols-7 gap-2 mb-2 text-center">
+      <div className="bg-gray-800 rounded-2xl border border-gray-700 p-5 shadow-xl space-y-4">
+        <div className="grid grid-cols-7 gap-2 text-center">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
             <div key={d} className="text-xs font-bold text-gray-400 uppercase py-2">
               {d}
@@ -547,42 +559,50 @@ export default function CalendarPage() {
               const isRest = log?.attendance === 'rest';
               const isMissed = log?.attendance === 'missed';
               const score = log?.growthScore ?? 0;
-              const hasData = hasCompleted || isRest || isMissed || (log?.foods && log.foods.length > 0);
 
-              let scoreColor = 'text-gray-500 bg-gray-700/50';
-              if (score >= 80) scoreColor = 'text-green-400 bg-green-500/20';
-              else if (score >= 60) scoreColor = 'text-orange-400 bg-orange-500/20';
-              else if (score > 0) scoreColor = 'text-yellow-400 bg-yellow-500/20';
+              // Dynamic Health Visual Status
+              const dayVisual = getDayHealthStatus(
+                { calories: targets.calories, protein: targets.protein, fat: targets.fat },
+                { calories: log?.totalCalories || 0, protein: log?.totalProtein || 0, fat: log?.totalFat || 0 },
+                log?.attendance || 'none',
+                score
+              );
 
               return (
                 <button
                   key={dateStr}
                   onClick={() => setSelectedDate(dateStr)}
-                  className={`relative flex flex-col justify-between h-28 p-2.5 rounded-xl border text-left transition-all duration-200 group hover:scale-[1.02] hover:border-orange-500/60 ${
+                  className={`relative flex flex-col justify-between h-28 p-2.5 rounded-xl border text-left transition-all duration-200 group hover:scale-[1.02] ${
                     isToday
-                      ? 'border-orange-500 bg-orange-500/5 shadow-md shadow-orange-500/10'
-                      : 'border-gray-700 bg-gray-850 hover:bg-gray-750'
+                      ? `${dayVisual.tileClass} ring-2 ring-orange-500/80 ring-offset-2 ring-offset-gray-900`
+                      : dayVisual.tileClass
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>
+                    <span className={`text-sm font-bold flex items-center gap-1.5 ${isToday ? 'text-orange-400' : 'text-white'}`}>
                       {dayNum}
-                      {isToday && <span className="ml-1 text-[10px] font-normal text-orange-400">Today</span>}
+                      {isToday && <span className="text-[10px] font-semibold text-orange-400">Today</span>}
                     </span>
 
+                    {/* Status Pill Badge */}
                     {hasCompleted && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded-md border border-orange-500/30">
                         <Flame className="w-3 h-3" /> Done
                       </span>
                     )}
                     {isRest && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-400 bg-sky-500/20 px-1.5 py-0.5 rounded-md border border-sky-500/30">
                         <Moon className="w-3 h-3" /> Rest
                       </span>
                     )}
                     {isMissed && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-500/20 px-1.5 py-0.5 rounded-md border border-rose-500/30">
                         <XCircle className="w-3 h-3" /> Missed
+                      </span>
+                    )}
+                    {!hasCompleted && !isRest && !isMissed && dayVisual.type === 'high_fat_warning' && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-300 bg-purple-500/20 px-1.5 py-0.5 rounded-md border border-purple-500/30">
+                        <AlertTriangle className="w-3 h-3" /> Fat Spike
                       </span>
                     )}
                   </div>
@@ -590,11 +610,11 @@ export default function CalendarPage() {
                   <div className="w-full space-y-0.5">
                     {log && log.totalCalories > 0 ? (
                       <>
-                        <p className="text-[11px] font-medium text-gray-300 truncate">
-                          {log.totalCalories} <span className="text-[9px] text-gray-400">kcal</span>
+                        <p className="text-[11px] font-semibold text-gray-200 truncate">
+                          {log.totalCalories} <span className="text-[9px] text-gray-400 font-normal">kcal</span>
                         </p>
-                        <p className="text-[10px] text-orange-300 font-semibold truncate">
-                          {log.totalProtein}g <span className="text-[9px] text-gray-400">protein</span>
+                        <p className="text-[10px] text-orange-300 font-bold truncate">
+                          {log.totalProtein}g <span className="text-[9px] text-gray-400 font-normal">protein</span>
                         </p>
                       </>
                     ) : (
@@ -603,9 +623,12 @@ export default function CalendarPage() {
                   </div>
 
                   <div className="w-full flex items-center justify-between pt-1 border-t border-gray-700/50">
-                    <span className="text-[9px] text-gray-400 font-medium">Growth</span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${hasData ? scoreColor : 'text-gray-500'}`}>
-                      {hasData ? `${score}%` : '-'}
+                    <span className="text-[9px] text-gray-400 font-medium flex items-center gap-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${dayVisual.dotColor}`} />
+                      Growth
+                    </span>
+                    <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-md ${dayVisual.growthColor}`}>
+                      {score > 0 ? `${score}%` : '-'}
                     </span>
                   </div>
                 </button>
@@ -613,9 +636,74 @@ export default function CalendarPage() {
             })}
           </div>
         )}
+
+        {/* â”€â”€â”€ DYNAMIC HEALTH & COLOR CODING LEGEND â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="pt-4 border-t border-gray-700/60">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-300 mb-3">
+            <Info className="w-4 h-4 text-orange-400" />
+            Calendar Color Coding & Motivation Guide:
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            {/* Legend 1: Champion */}
+            <div className="bg-emerald-950/30 border border-emerald-500/50 p-2.5 rounded-xl text-left">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
+                <span className="text-xs font-bold text-emerald-300">Champion Day</span>
+              </div>
+              <p className="text-[10px] text-gray-300 leading-tight">
+                Workout finished + hit protein & calorie goals (Score â‰¥ 75%).
+              </p>
+            </div>
+
+            {/* Legend 2: Solid Progress */}
+            <div className="bg-amber-950/30 border border-amber-500/50 p-2.5 rounded-xl text-left">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400" />
+                <span className="text-xs font-bold text-amber-300">Solid Progress</span>
+              </div>
+              <p className="text-[10px] text-gray-300 leading-tight">
+                Good workout consistency or steady nutrition progress.
+              </p>
+            </div>
+
+            {/* Legend 3: Clean Rest */}
+            <div className="bg-sky-950/30 border border-sky-500/50 p-2.5 rounded-xl text-left">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-sm shadow-sky-400" />
+                <span className="text-xs font-bold text-sky-300">Clean Rest Day</span>
+              </div>
+              <p className="text-[10px] text-gray-300 leading-tight">
+                Active recovery day with clean diet for muscle repair.
+              </p>
+            </div>
+
+            {/* Legend 4: High Fat/Calorie Spike */}
+            <div className="bg-purple-950/30 border border-purple-500/50 p-2.5 rounded-xl text-left">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-sm shadow-purple-400" />
+                <span className="text-xs font-bold text-purple-300">Fat / Calorie Spike</span>
+              </div>
+              <p className="text-[10px] text-gray-300 leading-tight">
+                Crossed fat or calorie limits (&gt;25% surplus) without exercise.
+              </p>
+            </div>
+
+            {/* Legend 5: Needs Focus */}
+            <div className="bg-rose-950/30 border border-rose-500/50 p-2.5 rounded-xl text-left">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-sm shadow-rose-400" />
+                <span className="text-xs font-bold text-rose-300">Needs Focus</span>
+              </div>
+              <p className="text-[10px] text-gray-300 leading-tight">
+                Missed workout or under-eating. Time to bounce back!
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Day Inspector & Log Modal */}
+      {/* â”€â”€â”€ DAY INSPECTOR MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <Modal
         isOpen={!!selectedDate}
         onClose={() => { setSelectedDate(null); setShowAddFood(false); }}
@@ -623,6 +711,20 @@ export default function CalendarPage() {
         size="lg"
       >
         <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
+          {/* Day Status Banner */}
+          <div className={`p-3.5 rounded-xl border flex items-center justify-between ${activeDayVisual.tileClass}`}>
+            <div className="flex items-center gap-2.5">
+              <span className={`w-3 h-3 rounded-full ${activeDayVisual.dotColor} shadow-md`} />
+              <div>
+                <h4 className="text-xs font-bold text-white">{activeDayVisual.label}</h4>
+                <p className="text-[11px] text-gray-300">{activeDayVisual.description}</p>
+              </div>
+            </div>
+            <span className={`text-xs font-extrabold px-2.5 py-1 rounded-lg ${activeDayVisual.badgeClass}`}>
+              {activeDayVisual.shortTag}
+            </span>
+          </div>
+
           {/* Section 1: Workout Attendance */}
           <div className="bg-gray-750 p-4 rounded-xl border border-gray-700 space-y-3">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
