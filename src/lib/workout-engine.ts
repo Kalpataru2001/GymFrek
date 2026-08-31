@@ -1,4 +1,4 @@
-/**
+﻿/**
  * GymFrek â€” Workout Plan Engine
  * Generates structured weekly workout plans based on fitness level, goal, and equipment.
  */
@@ -80,9 +80,121 @@ function ex(
 }
 
 /**
- * Comprehensive exercise database (40+ entries) with HD video demos, muscle anatomy, and form tips.
+ * Comprehensive exercise database (50+ entries) with HD video demos, muscle anatomy, and form tips.
  */
 const EXERCISE_DB: Record<string, ExerciseDB> = {
+  // â”€â”€ Stretching & Mobility (New!) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  stretching_full_body: {
+    full_gym: ex(
+      'Full Body Dynamic & Static Stretching Routine', 3, '30-45 sec per stretch', '15s', 'Mobility & Stretching',
+      'Perform a head-to-toe stretching sequence: neck rolls, shoulder dislocation pass-throughs with band, cat-cow spine flexion, standing hamstring fold, deep lunging hip flexor stretch, and seated butterfly. Hold each stretch for 30 seconds while taking deep diaphragmatic breaths.',
+      'beginner',
+      'L_xrDAtyPqI',
+      ['Full Body Mobility', 'Hamstrings', 'Hip Flexors', 'Chest', 'Spine'],
+      'Mat / Resistance Band',
+      ['Breathe deeply in through your nose and out through your mouth into the stretch.', 'Never bounce aggressively in a static stretch; ease into tension gently.'],
+      ['Holding your breath during deep stretches.', 'Forcing joints past their comfortable range of motion.']
+    ),
+    dumbbells_only: ex(
+      'Post-Workout Full Body Stretching', 3, '30 sec each', '15s', 'Mobility & Stretching',
+      'Complete routine: standing quad stretch, cross-body shoulder stretch, downward dog calf stretch, world greatest stretch (lunge with thoracic twist), and child pose.',
+      'beginner',
+      'L_xrDAtyPqI',
+      ['Hamstrings', 'Quadriceps', 'Shoulders', 'Lats', 'Hips'],
+      'Floor Mat'
+    ),
+    no_equipment: ex(
+      'Daily Full Body Stretching & Mobility', 3, '30-45 sec', '15s', 'Mobility & Stretching',
+      'Head-to-toe mobility sequence: forward fold for hamstrings, cobra pose for abs/lower back, pigeon pose for glutes, and doorway chest stretch.',
+      'beginner',
+      'L_xrDAtyPqI',
+      ['Full Body Flexibility', 'Spine', 'Hips', 'Hamstrings'],
+      'Bodyweight / Floor'
+    ),
+  },
+
+  stretching_upper_body: {
+    full_gym: ex(
+      'Chest, Shoulder & Upper Back Mobility Stretch', 3, '30 sec per side', '15s', 'Shoulders / Chest Mobility',
+      'Use a resistance band or doorway to stretch anterior deltoids and chest pectorals. Follow with cross-body arm stretch for rear delts and overhead triceps latch stretch.',
+      'beginner',
+      'g_tea8ZNk5A',
+      ['Pectorals', 'Deltoids', 'Rotator Cuff', 'Thoracic Spine'],
+      'Doorway or Wall'
+    ),
+    dumbbells_only: ex(
+      'Shoulder & Thoracic Spine Mobility', 3, '30 sec', '15s', 'Shoulders / Upper Back',
+      'Doorway chest stretch, wall angels, and kneeling thread-the-needle for upper back rotation.',
+      'beginner',
+      'g_tea8ZNk5A',
+      ['Shoulders', 'Chest', 'Upper Back'],
+      'Wall / Mat'
+    ),
+    no_equipment: ex(
+      'Doorway Chest & Shoulder Opener Stretch', 3, '30 sec', '15s', 'Upper Body Flexibility',
+      'Place forearm against doorframe at 90 degrees and step forward until deep stretch is felt across pecs and shoulder.',
+      'beginner',
+      'g_tea8ZNk5A',
+      ['Chest Pecs', 'Anterior Delts'],
+      'Doorframe'
+    ),
+  },
+
+  stretching_lower_body: {
+    full_gym: ex(
+      'Hamstring, Hip Flexor & Glute Deep Stretch', 3, '40 sec per side', '15s', 'Legs & Hips Flexibility',
+      'Pigeon pose for piriformis/glute release, half-kneeling hip flexor lunge, standing toe touch for hamstrings, and standing quad pull.',
+      'beginner',
+      'eOz1_8LXZHk',
+      ['Hamstrings', 'Iliopsoas Hip Flexors', 'Glutes', 'Calves'],
+      'Mat'
+    ),
+    dumbbells_only: ex(
+      'Hamstring & Quad Stretching Routine', 3, '30 sec', '15s', 'Legs Flexibility',
+      'Seated single-leg hamstring reach, kneeling couch stretch for hip flexors, and frog pose for adductors.',
+      'beginner',
+      'eOz1_8LXZHk',
+      ['Hamstrings', 'Quadriceps', 'Adductors'],
+      'Floor Mat'
+    ),
+    no_equipment: ex(
+      'Lower Body Hamstring & Hip Mobility Flow', 3, '30 sec each', '15s', 'Legs & Hips',
+      'Downward facing dog to stretch calves and hamstrings, followed by deep yogic squat (Malasana) for hip opening.',
+      'beginner',
+      'eOz1_8LXZHk',
+      ['Calves', 'Hamstrings', 'Groin', 'Hips'],
+      'Bodyweight / Floor'
+    ),
+  },
+
+  // â”€â”€ Cardio & Conditioning (New!) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  cardio_hiit: {
+    full_gym: ex(
+      'Treadmill Incline Walk / Sprints', 1, '15-20 min', '60s', 'Cardio & Conditioning',
+      'Set incline to 10-12% and speed to 4.5-5.5 km/h for steady state fat burn, or alternate 30s sprint / 60s walk for HIIT conditioning.',
+      'beginner',
+      '3gK-mYmO6Qk',
+      ['Cardiovascular Endurance', 'Calves', 'Glutes', 'Hamstrings'],
+      'Treadmill'
+    ),
+    dumbbells_only: ex(
+      'Jump Rope (Skipping) HIIT', 4, '60 sec on / 30 sec off', '30s', 'Cardio & Calves',
+      'Bounce lightly on balls of feet with wrists rotating rope smoothly. Keep core tight and elbows tucked.',
+      'beginner',
+      'u3zgHI8QnqE',
+      ['Cardio Endurance', 'Calves', 'Forearms', 'Footwork'],
+      'Jump Rope'
+    ),
+    no_equipment: ex(
+      'Burpees & Jumping Jacks HIIT', 4, '45 sec on / 15 sec rest', '30s', 'Full Body Cardio',
+      'Drop down into pushup, kick feet back in, and jump up with hands overhead. Great for maximum calorie burn.',
+      'beginner',
+      'auBLPXO8Fww',
+      ['Full Body Cardio', 'Quads', 'Chest', 'Core'],
+      'Bodyweight / Floor'
+    ),
+  },
+
   // â”€â”€ Chest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   chest_press_compound: {
     full_gym: ex(
@@ -124,40 +236,34 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'SrqOu55lrYU',
       ['Clavicular Upper Pecs', 'Anterior Deltoids', 'Triceps'],
-      'Barbell & Incline Bench',
-      ['Keep bench angle between 30 to 45 degrees to avoid shifting load to front shoulders.', 'Drive barbell straight up and lock in your clavicular head.'],
-      ['Using too steep an incline angle (>45 degrees) turning it into an overhead press.']
+      'Barbell & Incline Bench'
     ),
     dumbbells_only: ex(
       'Incline Dumbbell Press', 3, '10-12', '75s', 'Upper Chest',
-      'Set a bench to 30-45 degree incline. Press dumbbells from shoulder level upward in an arc, converging at the top. Lower slowly over 2-3 seconds to upper chest level.',
+      'Set a bench to 30-45 degree incline. Press dumbbells from shoulder level upward in an arc, converging at the top.',
       'beginner',
       '8iPEnn-ltC8',
       ['Upper Pectorals', 'Front Delts', 'Triceps'],
-      'Incline Bench & Dumbbells',
-      ['Rotate palms slightly inward (neutral grip) for optimal upper chest fiber alignment.'],
-      ['Letting dumbbells drift too far back behind your head.']
+      'Incline Bench & Dumbbells'
     ),
     no_equipment: ex(
       'Decline Push-Up', 3, '10-15', '60s', 'Upper Chest',
       'Elevate feet on a chair, bed or step with hands on the floor. Perform push-ups in this angled position to place maximum resistance onto upper chest and shoulders.',
       'beginner',
       'SKPab2YC8BE',
-      ['Upper Chest', 'Anterior Delts', 'Triceps', 'Serratus Anterior'],
-      'Chair or Elevated Surface',
-      ['Brace your core so your lower back does not hyperextend under elevated gravity.']
+      ['Upper Chest', 'Anterior Delts', 'Triceps'],
+      'Chair or Elevated Surface'
     ),
   },
 
   chest_fly: {
     full_gym: ex(
       'Cable Chest Fly', 3, '12-15', '60s', 'Chest',
-      'Set cables to chest height. Stand in split stance, pull handles together in a hugging arc meeting in front of chest. Maintain slight elbow bend throughout. Squeeze pecs hard for 1 second.',
+      'Set cables to chest height. Stand in split stance, pull handles together in a hugging arc meeting in front of chest. Squeeze pecs hard for 1 second.',
       'intermediate',
       'Iwe6AmxVf7o',
       ['Inner & Outer Pectorals', 'Anterior Deltoids'],
-      'Dual Cable Machine',
-      ['Think of hugging a giant tree trunk to keep elbow bend consistent.']
+      'Dual Cable Machine'
     ),
     dumbbells_only: ex(
       'Dumbbell Chest Fly', 3, '12-15', '60s', 'Chest',
@@ -165,8 +271,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       'eozdVDA78K0',
       ['Pectoralis Major', 'Chest Stretch'],
-      'Dumbbells & Bench',
-      ['Maintain a constant 15-degree bend in elbows; do not turn this into a press.']
+      'Dumbbells & Bench'
     ),
     no_equipment: ex(
       'Wide Push-Up', 3, '12-15', '60s', 'Chest',
@@ -213,8 +318,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       '9efgc2Wg0PQ',
       ['Latissimus Dorsi', 'Rhomboids', 'Trapezius', 'Biceps'],
-      'Barbell & Weight Plates',
-      ['Pull with your elbows, not your hands, to maximize back engagement.']
+      'Barbell & Weight Plates'
     ),
     dumbbells_only: ex(
       'Dumbbell Bent-Over Row', 4, '10-12', '75s', 'Back',
@@ -268,8 +372,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       '_oyxCn2iSjU',
       ['Hamstrings', 'Gluteus Maximus', 'Erector Spinae'],
-      'Barbell & Plates',
-      ['Keep bar in continuous contact with your thighs and shins throughout.']
+      'Barbell & Plates'
     ),
     dumbbells_only: ex(
       'Dumbbell Romanian Deadlift', 3, '10-12', '75s', 'Hamstrings / Lower Back',
@@ -351,8 +454,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'beginner',
       '3VcKaXpzqRo',
       ['Lateral Deltoid (Boulder Shoulders)'],
-      'Pair of Dumbbells',
-      ['Lead with your elbows and pour the pitch of water slightly at top.']
+      'Pair of Dumbbells'
     ),
     dumbbells_only: ex(
       'Dumbbell Lateral Raise', 4, '12-15', '45s', 'Side Deltoids',
@@ -380,8 +482,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
       'intermediate',
       'bEv6CCg2BC8',
       ['Quadriceps', 'Gluteus Maximus', 'Adductors', 'Core'],
-      'Barbell & Squat Rack',
-      ['Keep chest proud and knees tracking in line with your toes.']
+      'Barbell & Squat Rack'
     ),
     dumbbells_only: ex(
       'Dumbbell Goblet Squat', 4, '10-12', '75s', 'Quads / Glutes',
@@ -556,7 +657,9 @@ export function generateWorkoutPlan(
       day: 'Wednesday',
       focus: 'Active Rest & Recovery',
       isRestDay: true,
-      exercises: [],
+      exercises: [
+        getEx('stretching_full_body'),
+      ],
     },
     {
       day: 'Thursday',
@@ -584,19 +687,22 @@ export function generateWorkoutPlan(
     },
     {
       day: 'Saturday',
-      focus: 'Lower Body & Core',
+      focus: 'Lower Body & Conditioning',
       isRestDay: false,
       exercises: [
         getEx('legs_squat'),
         getEx('legs_lunge'),
         getEx('core_plank'),
+        getEx('stretching_lower_body'),
       ],
     },
     {
       day: 'Sunday',
       focus: 'Rest & Full Recovery',
       isRestDay: true,
-      exercises: [],
+      exercises: [
+        getEx('stretching_full_body'),
+      ],
     },
   ];
 
@@ -611,13 +717,13 @@ export function generateWorkoutPlan(
 }
 
 /**
- * Searches the exercise database to auto-match video demonstrations and form instructions for any exercise name.
+ * Intelligent fuzzy matcher to find videos and tutorials for ANY exercise name or keyword.
  */
 export function findExerciseVideo(name: string): Partial<Exercise> | null {
   if (!name || !name.trim()) return null;
   const q = name.toLowerCase().trim();
 
-  // Search through all exercises in EXERCISE_DB
+  // 1. Direct Search in EXERCISE_DB
   for (const slotKey of Object.keys(EXERCISE_DB)) {
     const slot = EXERCISE_DB[slotKey];
     for (const eq of ['full_gym', 'dumbbells_only', 'no_equipment'] as Equipment[]) {
@@ -640,6 +746,142 @@ export function findExerciseVideo(name: string): Partial<Exercise> | null {
       }
     }
   }
+
+  // 2. Semantic Keyword Routing Fallback
+  if (q.includes('stretch') || q.includes('mobility') || q.includes('flexibility') || q.includes('yoga')) {
+    return {
+      name: 'Full Body Dynamic & Static Stretching',
+      videoUrl: 'L_xrDAtyPqI',
+      muscleGroup: 'Mobility & Stretching',
+      instructions: 'Head-to-toe stretching sequence: hold each stretch for 30 seconds while breathing deeply to release muscular tension and improve recovery.',
+      targetMuscles: ['Full Body Flexibility', 'Hamstrings', 'Hips', 'Shoulders', 'Spine'],
+      equipment: 'Mat / Bodyweight',
+      tips: ['Breathe deeply and ease into each stretch without bouncing.'],
+    };
+  }
+
+  if (q.includes('warmup') || q.includes('warm up')) {
+    return {
+      name: 'Dynamic Warm-Up Routine',
+      videoUrl: 'g_tea8ZNk5A',
+      muscleGroup: 'Full Body Warm-Up',
+      instructions: 'Arm circles, leg swings, hip openers, and bodyweight squats to prime muscles and joints before training.',
+      targetMuscles: ['Joints', 'Cardiovascular', 'Mobility'],
+      equipment: 'Bodyweight',
+      tips: ['Gradually increase range of motion with each repetition.'],
+    };
+  }
+
+  if (q.includes('cardio') || q.includes('treadmill') || q.includes('running') || q.includes('walk') || q.includes('jog')) {
+    return {
+      name: 'Cardio & Incline Treadmill Walk',
+      videoUrl: '3gK-mYmO6Qk',
+      muscleGroup: 'Cardio & Conditioning',
+      instructions: 'Maintain steady pace at 10-12% incline or alternate jogging intervals for maximum caloric expenditure and heart health.',
+      targetMuscles: ['Cardiovascular System', 'Calves', 'Glutes'],
+      equipment: 'Treadmill / Track',
+    };
+  }
+
+  if (q.includes('jump rope') || q.includes('skipping')) {
+    return {
+      name: 'Jump Rope Conditioning',
+      videoUrl: 'u3zgHI8QnqE',
+      muscleGroup: 'Cardio & Calves',
+      instructions: 'Bounce lightly on the balls of your feet with wrists driving the rope.',
+      targetMuscles: ['Calves', 'Cardiovascular Endurance'],
+      equipment: 'Jump Rope',
+    };
+  }
+
+  if (q.includes('burpee')) {
+    return {
+      name: 'Burpees HIIT',
+      videoUrl: 'auBLPXO8Fww',
+      muscleGroup: 'Full Body HIIT',
+      instructions: 'Drop into plank, perform a pushup, jump feet back into hands and explode upward.',
+      targetMuscles: ['Full Body', 'Cardio', 'Chest', 'Quads'],
+      equipment: 'Bodyweight',
+    };
+  }
+
+  if (q.includes('curl') || q.includes('bicep')) {
+    return {
+      name: 'Bicep Curl',
+      videoUrl: 'kwG2ipFRgfo',
+      muscleGroup: 'Biceps',
+      instructions: 'Curl barbell or dumbbells upward squeezing biceps at peak contraction. Lower with a 2-second eccentric phase.',
+      targetMuscles: ['Biceps Brachii', 'Forearms'],
+      equipment: 'Dumbbells / Barbell',
+    };
+  }
+
+  if (q.includes('tricep') || q.includes('pushdown') || q.includes('extension') || q.includes('dip')) {
+    return {
+      name: 'Triceps Extension / Pushdown',
+      videoUrl: 'vB5OHsJ3EME',
+      muscleGroup: 'Triceps',
+      instructions: 'Extend forearms downward locking out elbows to contract all three triceps heads.',
+      targetMuscles: ['Triceps Brachii'],
+      equipment: 'Cable or Dumbbell',
+    };
+  }
+
+  if (q.includes('squat') || q.includes('leg') || q.includes('quad')) {
+    return {
+      name: 'Squat',
+      videoUrl: 'bEv6CCg2BC8',
+      muscleGroup: 'Quads / Glutes',
+      instructions: 'Sit hips down and back with knees aligned over toes. Drive through midfoot to stand.',
+      targetMuscles: ['Quadriceps', 'Glutes'],
+      equipment: 'Barbell / Dumbbell / Bodyweight',
+    };
+  }
+
+  if (q.includes('bench') || q.includes('press') || q.includes('chest') || q.includes('pushup') || q.includes('push up')) {
+    return {
+      name: 'Chest Press',
+      videoUrl: 'rT7DgCr-3pg',
+      muscleGroup: 'Chest',
+      instructions: 'Lower weight with elbows at 45 degrees until chest stretch, then press back up explosively.',
+      targetMuscles: ['Pectoralis Major', 'Triceps', 'Front Delts'],
+      equipment: 'Bench & Barbell / Dumbbells',
+    };
+  }
+
+  if (q.includes('row') || q.includes('pull') || q.includes('lat') || q.includes('back')) {
+    return {
+      name: 'Back Row',
+      videoUrl: '9efgc2Wg0PQ',
+      muscleGroup: 'Back',
+      instructions: 'Pull weight towards lower ribs driving elbows back and squeezing shoulder blades.',
+      targetMuscles: ['Lats', 'Rhomboids', 'Biceps'],
+      equipment: 'Barbell / Cable / Dumbbells',
+    };
+  }
+
+  if (q.includes('shoulder') || q.includes('delt') || q.includes('overhead') || q.includes('raise')) {
+    return {
+      name: 'Shoulder Press / Lateral Raise',
+      videoUrl: '3VcKaXpzqRo',
+      muscleGroup: 'Shoulders',
+      instructions: 'Raise weight with controlled tempo to shoulder height without shrugging traps.',
+      targetMuscles: ['Deltoids'],
+      equipment: 'Dumbbells / Barbell',
+    };
+  }
+
+  if (q.includes('plank') || q.includes('ab') || q.includes('core') || q.includes('crunch')) {
+    return {
+      name: 'Plank & Core Exercise',
+      videoUrl: 'ASdvN_XEl_c',
+      muscleGroup: 'Core / Abs',
+      instructions: 'Hold rigid plank posture bracing abdominal wall and glutes.',
+      targetMuscles: ['Rectus Abdominis', 'Transverse Abdominis'],
+      equipment: 'Bodyweight / Floor',
+    };
+  }
+
   return null;
 }
 

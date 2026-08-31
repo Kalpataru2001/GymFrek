@@ -15,6 +15,7 @@ import {
   Repeat,
   Clock,
   ExternalLink,
+  Zap,
 } from 'lucide-react';
 
 interface EditExerciseModalProps {
@@ -101,13 +102,13 @@ export default function EditExerciseModal({
     setSearchQuery('');
   };
 
-  // Handle typing custom name and auto-matching
+  // Handle typing custom name and auto-matching video + instructions
   const handleNameChange = (val: string) => {
     setName(val);
     const matched = findExerciseVideo(val);
     if (matched) {
-      if (matched.videoUrl && !videoUrl) setVideoUrl(matched.videoUrl);
-      if (matched.muscleGroup && muscleGroup === 'Chest') setMuscleGroup(matched.muscleGroup);
+      if (matched.videoUrl) setVideoUrl(matched.videoUrl);
+      if (matched.muscleGroup && (muscleGroup === 'Chest' || !muscleGroup)) setMuscleGroup(matched.muscleGroup);
       if (matched.instructions && !instructions) setInstructions(matched.instructions);
     }
   };
@@ -129,13 +130,13 @@ export default function EditExerciseModal({
 
     const savedExercise: Exercise = {
       name: name.trim(),
-      muscleGroup: muscleGroup.trim(),
-      sets: Number(sets),
-      reps: reps.trim(),
-      rest: rest.trim(),
-      instructions: instructions.trim() || `Perform ${name.trim()} with controlled form and steady breathing.`,
+      muscleGroup: muscleGroup.trim() || 'General Fitness',
+      sets: Number(sets) || 3,
+      reps: reps.trim() || '10-12',
+      rest: rest.trim() || '60s',
+      instructions: instructions.trim() || `Perform ${name.trim()} with controlled form, proper breathing, and steady cadence.`,
       difficulty,
-      videoUrl: cleanYouTubeId || videoUrl.trim(),
+      videoUrl: cleanYouTubeId || videoUrl.trim() || (matched?.videoUrl || 'L_xrDAtyPqI'),
       targetMuscles: matched?.targetMuscles || [muscleGroup],
       equipment: matched?.equipment || 'Gym Equipment',
       tips: matched?.tips || ['Focus on controlled tempo and full range of motion.'],
@@ -146,10 +147,12 @@ export default function EditExerciseModal({
   };
 
   const filteredLibrary = useMemo(() => {
-    if (!searchQuery.trim()) return allLibraryExercises.slice(0, 8);
-    const q = searchQuery.toLowerCase();
+    if (!searchQuery.trim()) return allLibraryExercises.slice(0, 10);
+    const q = searchQuery.toLowerCase().trim();
     return allLibraryExercises.filter(e =>
-      e.name.toLowerCase().includes(q) || e.muscleGroup.toLowerCase().includes(q)
+      e.name.toLowerCase().includes(q) ||
+      e.muscleGroup.toLowerCase().includes(q) ||
+      (e.targetMuscles && e.targetMuscles.some(m => m.toLowerCase().includes(q)))
     );
   }, [allLibraryExercises, searchQuery]);
 
@@ -172,15 +175,39 @@ export default function EditExerciseModal({
           <div className="relative">
             <input
               type="text"
-              placeholder="Search exercise library (e.g. Bench Press, Squat, Pull-Up, Lateral Raise)..."
+              placeholder="Type to search (e.g. stretching, bench press, squat, lats, warmup, plank)..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+              className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500"
             />
           </div>
 
-          {searchQuery.trim() !== '' && (
-            <div className="max-h-36 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg p-1 space-y-1 shadow-lg">
+          {/* Quick Category Suggestions */}
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {[
+              { label: 'ðŸ§˜ Stretching', q: 'stretching' },
+              { label: 'ðŸ”¥ Warm-Up', q: 'warmup' },
+              { label: 'ðŸƒ Cardio / HIIT', q: 'cardio' },
+              { label: 'ðŸ‹ï¸ Chest', q: 'chest' },
+              { label: 'ðŸ§— Back', q: 'back' },
+              { label: 'ðŸ¦µ Legs', q: 'squat' },
+              { label: 'ðŸ’ª Biceps & Triceps', q: 'curl' },
+              { label: 'ðŸŽ¯ Abs & Core', q: 'plank' },
+            ].map(chip => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => setSearchQuery(chip.q)}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 transition-colors"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Suggestions List */}
+          {filteredLibrary.length > 0 && (
+            <div className="max-h-40 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg p-1 space-y-1 shadow-lg mt-1">
               {filteredLibrary.map((exItem, idx) => (
                 <button
                   key={idx}
@@ -215,7 +242,7 @@ export default function EditExerciseModal({
           <input
             type="text"
             required
-            placeholder="e.g. Incline Dumbbell Bench Press"
+            placeholder="e.g. Full Body Stretching, Incline Bench Press, Dumbbell Lunges"
             value={name}
             onChange={e => handleNameChange(e.target.value)}
             className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500 font-medium"
@@ -229,22 +256,34 @@ export default function EditExerciseModal({
               <Play className="w-3.5 h-3.5 text-orange-400" />
               Exercise Video Tutorial (YouTube Link or ID)
             </label>
-            {cleanYouTubeId && (
-              <button
-                type="button"
-                onClick={() => setPreviewVideo(p => !p)}
-                className="text-[11px] font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1"
-              >
-                {previewVideo ? 'Hide Preview' : 'â–¶ï¸ Preview Video'}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {cleanYouTubeId && (
+                <button
+                  type="button"
+                  onClick={() => setPreviewVideo(p => !p)}
+                  className="text-[11px] font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                >
+                  {previewVideo ? 'Hide Preview' : 'â–¶ï¸ Preview Video'}
+                </button>
+              )}
+              {name.trim() && (
+                <a
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise form tutorial')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[11px] text-gray-400 hover:text-white flex items-center gap-1"
+                >
+                  Search on YouTube <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
           </div>
 
           <div className="relative">
             <Link2 className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
             <input
               type="text"
-              placeholder="e.g. https://www.youtube.com/watch?v=VmB1G1K7v94 or VmB1G1K7v94"
+              placeholder="e.g. L_xrDAtyPqI or https://www.youtube.com/watch?v=L_xrDAtyPqI"
               value={videoUrl}
               onChange={e => setVideoUrl(e.target.value)}
               className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-600 text-white rounded-lg text-xs focus:outline-none focus:border-orange-500 font-mono text-[11px]"
@@ -266,10 +305,10 @@ export default function EditExerciseModal({
         {/* Muscle Group & Difficulty */}
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <label className="block text-gray-300 font-medium mb-1">Muscle Group</label>
+            <label className="block text-gray-300 font-medium mb-1">Muscle Group / Category</label>
             <input
               type="text"
-              placeholder="e.g. Chest, Back, Quads, Shoulders, Biceps"
+              placeholder="e.g. Mobility & Stretching, Chest, Back, Quads, Biceps"
               value={muscleGroup}
               onChange={e => setMuscleGroup(e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2"
@@ -308,11 +347,11 @@ export default function EditExerciseModal({
 
           <div>
             <label className="text-gray-300 font-medium mb-1 flex items-center gap-1">
-              <Repeat className="w-3 h-3 text-blue-400" /> Reps
+              <Repeat className="w-3 h-3 text-blue-400" /> Reps / Duration
             </label>
             <input
               type="text"
-              placeholder="e.g. 8-12, 15, 30s"
+              placeholder="e.g. 8-12, 30 sec, 15 min"
               value={reps}
               onChange={e => setReps(e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-2.5 py-1.5"
@@ -325,7 +364,7 @@ export default function EditExerciseModal({
             </label>
             <input
               type="text"
-              placeholder="e.g. 60s, 90s, 2m"
+              placeholder="e.g. 15s, 60s, 90s"
               value={rest}
               onChange={e => setRest(e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-2.5 py-1.5"
@@ -340,7 +379,7 @@ export default function EditExerciseModal({
           </label>
           <textarea
             rows={3}
-            placeholder="Describe setup, movement path, breathing, and lockout cues..."
+            placeholder="Describe setup, movement path, breathing, and stretching/lockout cues..."
             value={instructions}
             onChange={e => setInstructions(e.target.value)}
             className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-orange-500"
