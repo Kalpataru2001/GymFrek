@@ -1,12 +1,12 @@
 ﻿/**
- * GymFrek â€” Comprehensive Indian & Global Food Nutrition Database
- * Full support for English, Hindi, and regional food names with accurate household portions.
+ * GymFrek â€” Master Indian & Global Food Database
+ * Covers North, South, East, West Indian cuisines, street food, curries, sabzis, dals, meats, sweets, snacks, and fitness staples.
  */
 
 export type FoodPortionType = 'count' | 'weight' | 'volume';
 
 export interface FoodServingUnit {
-  label: string; // e.g. "Grams (g)", "Piece / Roti (35g)", "Bowl (150g)"
+  label: string; // e.g. "Grams (g)", "Piece / Roti (35g)", "Katori / Bowl (150g)"
   grams: number; // weight in grams
 }
 
@@ -14,7 +14,7 @@ export interface FoodEntry {
   id: string;
   name: string;
   aliases: string[];
-  category: 'Indian Sabzi & Veg' | 'Dals & Curries' | 'Grains, Roti & Rice' | 'Protein & Meat' | 'Dairy & Vegetarian' | 'Breakfast & Snacks' | 'Fruits & Nuts' | 'Fitness Supplements' | 'Beverages';
+  category: 'Indian Sabzi & Veg' | 'Dals & Curries' | 'Grains, Roti & Rice' | 'Protein & Meat' | 'Dairy & Vegetarian' | 'Breakfast & Snacks' | 'Indian Sweets & Street Food' | 'Fruits & Nuts' | 'Fitness Supplements' | 'Beverages';
   portionType: FoodPortionType;
   servingUnits: FoodServingUnit[];
   defaultUnitIndex: number;
@@ -30,7 +30,7 @@ export interface FoodEntry {
 }
 
 export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
-  // â”€â”€â”€ Indian Sabzis & Vegetables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€â”€ Indian Sabzis & Veggies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'bhindi_masala',
     name: 'Bhindi Masala / Okra / Ladies Finger',
@@ -65,6 +65,36 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 92, protein: 2.4, carbs: 14.5, fat: 3.2, fiber: 2.8 },
   },
   {
+    id: 'aloo_matar',
+    name: 'Aloo Matar (Potato & Green Peas Curry)',
+    aliases: ['aloo matar', 'alu matar', 'potato peas curry', 'aloo mutter'],
+    category: 'Indian Sabzi & Veg',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (150g)', grams: 150 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [100, 150, 200],
+    ingredients: ['Potatoes', 'Green Peas (Matar)', 'Tomato Puree', 'Onion', 'Spices'],
+    per100g: { calories: 98, protein: 2.8, carbs: 16.0, fat: 2.8, fiber: 3.0 },
+  },
+  {
+    id: 'aloo_jeera',
+    name: 'Jeera Aloo (Cumin Spiced Potatoes)',
+    aliases: ['jeera aloo', 'aloo jeera', 'zeera aloo', 'cumin potato'],
+    category: 'Indian Sabzi & Veg',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (150g)', grams: 150 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [100, 150, 200],
+    ingredients: ['Boiled Diced Potatoes', 'Roasted Cumin (Jeera)', 'Turmeric', 'Green Chilli', 'Ghee/Oil'],
+    per100g: { calories: 120, protein: 2.0, carbs: 21.0, fat: 3.5, fiber: 2.2 },
+  },
+  {
     id: 'baingan_bharta',
     name: 'Baingan Bharta (Roasted Eggplant/Brinjal)',
     aliases: ['baingan', 'baingan bharta', 'eggplant', 'brinjal', 'aubergine', 'baigan ka bharta'],
@@ -96,6 +126,37 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 150, protein: 8.5, carbs: 4.5, fat: 11.0, fiber: 2.5 },
   },
   {
+    id: 'paneer_butter_masala',
+    name: 'Paneer Butter Masala / Shahi Paneer',
+    aliases: ['paneer butter masala', 'shahi paneer', 'pbm', 'butter paneer', 'paneer makhani'],
+    category: 'Indian Sabzi & Veg',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (150g)', grams: 150 },
+      { label: 'Large Bowl (250g)', grams: 250 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200, 250],
+    ingredients: ['Paneer Cubes', 'Cashew & Tomato Gravy', 'Butter', 'Cream', 'Kasuri Methi', 'Spices'],
+    per100g: { calories: 230, protein: 9.0, carbs: 8.5, fat: 18.0, fiber: 1.5 },
+  },
+  {
+    id: 'kadai_paneer',
+    name: 'Kadai Paneer (with Bell Peppers)',
+    aliases: ['kadai paneer', 'karahi paneer', 'capsicum paneer'],
+    category: 'Indian Sabzi & Veg',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (150g)', grams: 150 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200, 250],
+    ingredients: ['Paneer Cubes', 'Bell Peppers (Shimla Mirch)', 'Onion Cubes', 'Fresh Kadai Masala', 'Oil'],
+    per100g: { calories: 180, protein: 10.0, carbs: 6.0, fat: 13.0, fiber: 2.2 },
+  },
+  {
     id: 'lauki_sabzi',
     name: 'Lauki / Bottle Gourd / Dudhi Sabzi',
     aliases: ['lauki', 'bottle gourd', 'dudhi', 'ghiya', 'lauki ki sabzi', 'kaddu'],
@@ -109,6 +170,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     quickPortions: [100, 150, 200],
     ingredients: ['Bottle Gourd (Lauki)', 'Cumin Seeds', 'Turmeric', 'Green Chilli', 'Light Ghee/Oil'],
     per100g: { calories: 45, protein: 1.1, carbs: 5.0, fat: 2.2, fiber: 2.0 },
+  },
+  {
+    id: 'karela_sabzi',
+    name: 'Karela / Bitter Gourd Fry',
+    aliases: ['karela', 'bitter gourd', 'karela fry', 'karele ki sabzi'],
+    category: 'Indian Sabzi & Veg',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (100g)', grams: 100 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [80, 100, 150],
+    ingredients: ['Sliced Bitter Gourd', 'Onion', 'Fennel (Saunf)', 'Amchur', 'Mustard Oil'],
+    per100g: { calories: 75, protein: 1.6, carbs: 7.0, fat: 4.5, fiber: 3.0 },
   },
   {
     id: 'mix_veg_curry',
@@ -159,6 +235,22 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 95, protein: 5.5, carbs: 14.0, fat: 2.2, fiber: 3.5 },
   },
   {
+    id: 'dal_makhani',
+    name: 'Dal Makhani (Black Lentils with Butter & Cream)',
+    aliases: ['dal makhani', 'makhani dal', 'black dal', 'kali dal', 'maa ki dal'],
+    category: 'Dals & Curries',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (150g)', grams: 150 },
+      { label: 'Large Bowl (250g)', grams: 250 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200, 250],
+    ingredients: ['Whole Black Urad Lentils', 'Rajma', 'Butter', 'Cream', 'Tomato Puree', 'Ginger Garlic'],
+    per100g: { calories: 160, protein: 6.2, carbs: 16.5, fat: 8.0, fiber: 4.8 },
+  },
+  {
     id: 'rajma_masala',
     name: 'Rajma Masala (Kidney Beans Curry)',
     aliases: ['rajma', 'rajma masala', 'kidney beans', 'rajma chawal', 'red kidney beans'],
@@ -206,6 +298,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 140, protein: 8.5, carbs: 22.0, fat: 2.5, fiber: 6.5 },
   },
   {
+    id: 'kadhi_pakora',
+    name: 'Kadhi Pakora (Gram Flour & Yogurt Curry)',
+    aliases: ['kadhi', 'kadhi pakora', 'punjabi kadhi', 'besan kadhi', 'dahi kadhi'],
+    category: 'Dals & Curries',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (150g)', grams: 150 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200, 250],
+    ingredients: ['Sour Yogurt (Dahi)', 'Besan (Gram Flour)', 'Fried Onion Pakoras', 'Fenugreek & Mustard Tadka'],
+    per100g: { calories: 110, protein: 3.5, carbs: 12.0, fat: 5.2, fiber: 1.8 },
+  },
+  {
     id: 'sambar',
     name: 'South Indian Sambar',
     aliases: ['sambar', 'sambhar', 'south indian sambar'],
@@ -220,6 +327,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     quickPortions: [150, 200, 250],
     ingredients: ['Toor Dal', 'Drumstick, Pumpkin, Shallots', 'Tamarind Pulp', 'Sambar Masala'],
     per100g: { calories: 65, protein: 3.2, carbs: 10.5, fat: 1.4, fiber: 2.5 },
+  },
+  {
+    id: 'rasam',
+    name: 'South Indian Rasam',
+    aliases: ['rasam', 'pepper rasam', 'tomato rasam'],
+    category: 'Dals & Curries',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Bowl (150g)', grams: 150 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200],
+    ingredients: ['Tomato', 'Tamarind', 'Black Pepper', 'Cumin', 'Garlic', 'Curry Leaves'],
+    per100g: { calories: 35, protein: 1.0, carbs: 6.0, fat: 0.8, fiber: 1.0 },
   },
 
   // â”€â”€â”€ Grains, Roti & Rice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -256,6 +378,55 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 340, protein: 8.0, carbs: 68, fat: 4.5, fiber: 2.5 },
   },
   {
+    id: 'naan_butter',
+    name: 'Butter Naan / Garlic Naan',
+    aliases: ['naan', 'butter naan', 'garlic naan', 'tandoori naan', 'plain naan'],
+    category: 'Grains, Roti & Rice',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Naan (90g)', grams: 90 },
+      { label: 'Large Naan (130g)', grams: 130 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Refined Flour (Maida)', 'Yogurt', 'Butter', 'Yeast', 'Garlic/Coriander'],
+    per100g: { calories: 315, protein: 8.5, carbs: 50.0, fat: 9.5, fiber: 2.0 },
+  },
+  {
+    id: 'puri_poori',
+    name: 'Puri / Poori (Deep Fried Flatbread)',
+    aliases: ['puri', 'poori', 'puris', 'bhatura'],
+    category: 'Grains, Roti & Rice',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Puri / Piece (25g)', grams: 25 },
+      { label: 'Plate of 3 (75g)', grams: 75 },
+      { label: 'Bhatura (90g)', grams: 90 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [2, 3, 4],
+    ingredients: ['Whole Wheat / Maida Flour', 'Deep Fried in Oil'],
+    per100g: { calories: 380, protein: 6.5, carbs: 48.0, fat: 18.5, fiber: 3.5 },
+  },
+  {
+    id: 'millet_roti',
+    name: 'Bajra / Jowar / Ragi Roti (Millet Bread)',
+    aliases: ['bajra roti', 'jowar roti', 'ragi roti', 'nachni roti', 'millet roti', 'bhakri'],
+    category: 'Grains, Roti & Rice',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Roti (50g)', grams: 50 },
+      { label: 'Large Bhakri (80g)', grams: 80 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2, 3],
+    ingredients: ['100% Pearl Millet (Bajra) / Sorghum (Jowar) / Finger Millet (Ragi)', 'Water', 'Pinch of Salt'],
+    per100g: { calories: 275, protein: 8.0, carbs: 55.0, fat: 2.5, fiber: 11.0 },
+  },
+  {
     id: 'rice_white_cooked',
     name: 'Cooked White Rice',
     aliases: ['rice', 'white rice', 'cooked rice', 'chawal', 'plain rice', 'bhat', 'steamed rice', 'basmati rice'],
@@ -271,6 +442,22 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     quickPortions: [100, 150, 200, 250],
     ingredients: ['White Basmati / Sona Masoori Rice', 'Water'],
     per100g: { calories: 130, protein: 2.7, carbs: 28.2, fat: 0.3, fiber: 0.4 },
+  },
+  {
+    id: 'jeera_rice',
+    name: 'Jeera Rice / Ghee Rice / Pulao',
+    aliases: ['jeera rice', 'ghee rice', 'veg pulao', 'pulao', 'matar pulao'],
+    category: 'Grains, Roti & Rice',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Standard Plate (150g)', grams: 150 },
+      { label: 'Large Plate (250g)', grams: 250 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200, 250],
+    ingredients: ['Basmati Rice', 'Cumin Seeds (Jeera)', 'Ghee', 'Whole Spices', 'Green Peas'],
+    per100g: { calories: 165, protein: 3.2, carbs: 30.0, fat: 3.8, fiber: 1.0 },
   },
   {
     id: 'chicken_biryani',
@@ -306,6 +493,22 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 240, protein: 4.5, carbs: 36, fat: 9.0, fiber: 3.5 },
   },
   {
+    id: 'paratha_paneer',
+    name: 'Paneer Paratha (Stuffed Cottage Cheese Bread)',
+    aliases: ['paneer paratha', 'stuffed paneer paratha'],
+    category: 'Grains, Roti & Rice',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Paratha (110g)', grams: 110 },
+      { label: 'Large Paratha (160g)', grams: 160 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Wheat Flour', 'Grated Paneer', 'Green Chillies', 'Spices', 'Ghee/Oil'],
+    per100g: { calories: 280, protein: 9.5, carbs: 32.0, fat: 12.5, fiber: 3.0 },
+  },
+  {
     id: 'khichdi_moong',
     name: 'Moong Dal Khichdi',
     aliases: ['khichdi', 'khichri', 'moong khichdi', 'dal khichdi'],
@@ -338,6 +541,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     quickPortions: [30, 50, 75, 100],
     ingredients: ['Defatted Soya Flour (52% Plant Protein, Essential Amino Acids)'],
     per100g: { calories: 345, protein: 52.0, carbs: 33.0, fat: 0.5, fiber: 13.0 },
+  },
+  {
+    id: 'soya_chaap',
+    name: 'Soya Chaap (Tandoori / Curry)',
+    aliases: ['soya chaap', 'tandoori chaap', 'malai chaap', 'soya chap'],
+    category: 'Protein & Meat',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Standard Portion (150g)', grams: 150 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [100, 150, 200],
+    ingredients: ['Soya Flour & Wheat Gluten (High Protein)', 'Yogurt Marinade', 'Spices'],
+    per100g: { calories: 185, protein: 18.0, carbs: 12.0, fat: 7.0, fiber: 3.5 },
   },
   {
     id: 'egg_boiled_whole',
@@ -419,6 +637,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 175, protein: 18.0, carbs: 4.5, fat: 9.5, fiber: 1.2 },
   },
   {
+    id: 'butter_chicken',
+    name: 'Butter Chicken (Murgh Makhani)',
+    aliases: ['butter chicken', 'murgh makhani', 'chicken makhani'],
+    category: 'Protein & Meat',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Bowl (200g)', grams: 200 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200, 250],
+    ingredients: ['Tandoori Chicken', 'Butter & Cream', 'Tomato Cashew Puree', 'Kasuri Methi'],
+    per100g: { calories: 235, protein: 16.0, carbs: 6.0, fat: 16.5, fiber: 1.0 },
+  },
+  {
     id: 'fish_curry',
     name: 'Fish Curry / Macher Jhol',
     aliases: ['fish', 'fish curry', 'machli', 'macher jhol', 'rohu curry', 'katla curry', 'fish fry'],
@@ -433,6 +666,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     quickPortions: [120, 200, 250],
     ingredients: ['Fish Pieces', 'Mustard / Tomato Gravy', 'Turmeric', 'Green Chilli', 'Mustard Oil'],
     per100g: { calories: 135, protein: 16.5, carbs: 3.0, fat: 6.5, fiber: 0.5 },
+  },
+  {
+    id: 'mutton_curry',
+    name: 'Mutton Curry / Lamb Rogan Josh',
+    aliases: ['mutton', 'mutton curry', 'gosht', 'rogan josh', 'lamb curry'],
+    category: 'Protein & Meat',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Bowl (200g)', grams: 200 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [150, 200, 250],
+    ingredients: ['Tender Goat Mutton', 'Yogurt & Onion Gravy', 'Kashmiri Spices', 'Mustard Oil/Ghee'],
+    per100g: { calories: 220, protein: 17.5, carbs: 3.5, fat: 15.0, fiber: 0.8 },
   },
 
   // â”€â”€â”€ Dairy & Vegetarian â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -484,6 +732,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 65, protein: 3.8, carbs: 5.0, fat: 3.5, fiber: 0 },
   },
   {
+    id: 'boondi_raita',
+    name: 'Boondi Raita / Cucumber Raita',
+    aliases: ['raita', 'boondi raita', 'cucumber raita', 'kheera raita'],
+    category: 'Dairy & Vegetarian',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Katori / Bowl (120g)', grams: 120 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [100, 120, 150],
+    ingredients: ['Whisked Curd', 'Boondi / Cucumber', 'Roasted Cumin', 'Black Salt'],
+    per100g: { calories: 95, protein: 3.5, carbs: 9.0, fat: 5.0, fiber: 0.5 },
+  },
+  {
     id: 'chaas_buttermilk',
     name: 'Chaas / Buttermilk',
     aliases: ['chaas', 'buttermilk', 'chach', 'matha', 'mattha', 'masala chaas'],
@@ -497,6 +760,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     quickPortions: [1, 2],
     ingredients: ['Diluted Curd', 'Roasted Cumin', 'Mint', 'Black Salt', 'Water'],
     per100g: { calories: 28, protein: 1.8, carbs: 2.6, fat: 1.1, fiber: 0 },
+  },
+  {
+    id: 'sweet_lassi',
+    name: 'Sweet Lassi / Mango Lassi',
+    aliases: ['lassi', 'sweet lassi', 'mango lassi', 'punjabi lassi'],
+    category: 'Dairy & Vegetarian',
+    portionType: 'volume',
+    servingUnits: [
+      { label: 'Glass (250ml)', grams: 250 },
+      { label: 'Large Glass (350ml)', grams: 350 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Thick Curd', 'Sugar / Mango Pulp', 'Cardamom', 'Cream'],
+    per100g: { calories: 115, protein: 3.2, carbs: 18.0, fat: 3.5, fiber: 0.2 },
   },
   {
     id: 'milk_toned',
@@ -549,6 +827,21 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 160, protein: 3.5, carbs: 27.0, fat: 4.5, fiber: 2.0 },
   },
   {
+    id: 'upma_suji',
+    name: 'Suji Upma (Semolina Savory Porridge)',
+    aliases: ['upma', 'suji upma', 'rava upma', 'uppumav'],
+    category: 'Breakfast & Snacks',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Bowl / Plate (150g)', grams: 150 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [100, 150, 200],
+    ingredients: ['Roasted Semolina (Rava/Suji)', 'Mustard Seeds', 'Curry Leaves', 'Urad Dal', 'Veggies', 'Ghee'],
+    per100g: { calories: 155, protein: 3.8, carbs: 25.0, fat: 4.5, fiber: 1.8 },
+  },
+  {
     id: 'idli_steamed',
     name: 'Steamed Rice Idli',
     aliases: ['idli', 'idlis', 'steamed idli', 'rice idli', 'idly'],
@@ -581,20 +874,115 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 170, protein: 4.0, carbs: 30.0, fat: 4.0, fiber: 1.8 },
   },
   {
-    id: 'peanut_butter',
-    name: 'Peanut Butter',
-    aliases: ['peanut butter', 'pb', 'mungfali butter', 'roasted peanut butter'],
+    id: 'besan_chilla',
+    name: 'Besan Chilla / Moong Dal Chilla',
+    aliases: ['chilla', 'besan chilla', 'moong chilla', 'cheela', 'gram flour pancake'],
     category: 'Breakfast & Snacks',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Chilla (70g)', grams: 70 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2, 3],
+    ingredients: ['Gram Flour (Besan)', 'Finely Chopped Onion & Tomato', 'Ajwain', 'Green Chilli', '1 tsp Oil'],
+    per100g: { calories: 180, protein: 9.5, carbs: 24.0, fat: 5.5, fiber: 5.0 },
+  },
+
+  // â”€â”€â”€ Indian Street Food & Sweets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  {
+    id: 'pav_bhaji',
+    name: 'Pav Bhaji (Spiced Veg Mash with Buttered Pav)',
+    aliases: ['pav bhaji', 'bhaji', 'pav', 'mumbai pav bhaji'],
+    category: 'Indian Sweets & Street Food',
+    portionType: 'count',
+    servingUnits: [
+      { label: '1 Plate (1 Bowl Bhaji + 2 Butter Pav) (300g)', grams: 300 },
+      { label: '1 Butter Pav (40g)', grams: 40 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Potatoes, Cauliflower, Peas, Tomato', 'Butter', 'Pav Bhaji Masala', 'Bakery Pav'],
+    per100g: { calories: 175, protein: 3.5, carbs: 24.0, fat: 7.5, fiber: 2.5 },
+  },
+  {
+    id: 'samosa',
+    name: 'Samosa (Crispy Potato Pastry)',
+    aliases: ['samosa', 'singara', 'aloo samosa', 'samosas'],
+    category: 'Indian Sweets & Street Food',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Piece (80g)', grams: 80 },
+      { label: '2 Samosas (160g)', grams: 160 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Maida Pastry', 'Spiced Potato & Pea Filling', 'Deep Fried in Oil'],
+    per100g: { calories: 308, protein: 4.5, carbs: 32.0, fat: 18.0, fiber: 2.2 },
+  },
+  {
+    id: 'momos_veg_chicken',
+    name: 'Steamed Momos (Veg / Chicken)',
+    aliases: ['momos', 'steamed momos', 'chicken momos', 'veg momos', 'dimsum'],
+    category: 'Indian Sweets & Street Food',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Plate of 6 Momos (150g)', grams: 150 },
+      { label: '1 Momo (25g)', grams: 25 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Thin Flour Wrapper', 'Minced Cabbage / Chicken Filling', 'Garlic Chilli Chutney'],
+    per100g: { calories: 145, protein: 7.5, carbs: 22.0, fat: 3.0, fiber: 1.5 },
+  },
+  {
+    id: 'pani_puri',
+    name: 'Pani Puri / Golgappa / Puchka (6 Pcs)',
+    aliases: ['pani puri', 'golgappa', 'puchka', 'panipuri', 'gol gappe'],
+    category: 'Indian Sweets & Street Food',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Plate of 6 Puris (150g)', grams: 150 },
+      { label: 'Plate of 10 Puris (250g)', grams: 250 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Semolina/Wheat Crisp Puris', 'Boiled Potato & Chickpea Filling', 'Spiced Mint Tamarind Water'],
+    per100g: { calories: 125, protein: 2.5, carbs: 22.0, fat: 3.2, fiber: 1.8 },
+  },
+  {
+    id: 'gulab_jamun',
+    name: 'Gulab Jamun',
+    aliases: ['gulab jamun', 'jamun', 'gulabjamun'],
+    category: 'Indian Sweets & Street Food',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Piece (50g)', grams: 50 },
+      { label: '2 Pieces (100g)', grams: 100 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Khoa / Mawa Milk Solids', 'Cardamom Sugar Syrup', 'Fried in Ghee'],
+    per100g: { calories: 375, protein: 4.5, carbs: 58.0, fat: 15.0, fiber: 0 },
+  },
+  {
+    id: 'kheer_rice',
+    name: 'Kheer (Rice Pudding with Dry Fruits)',
+    aliases: ['kheer', 'payasam', 'rice kheer', 'phirni'],
+    category: 'Indian Sweets & Street Food',
     portionType: 'weight',
     servingUnits: [
       { label: 'Grams (g)', grams: 1 },
-      { label: 'Tablespoon (16g)', grams: 16 },
-      { label: '2 Tablespoons (32g)', grams: 32 },
+      { label: 'Katori / Bowl (120g)', grams: 120 },
     ],
     defaultUnitIndex: 0,
-    quickPortions: [16, 32, 50],
-    ingredients: ['100% Roasted Peanuts', 'Pinch of Salt'],
-    per100g: { calories: 588, protein: 25.0, carbs: 20.0, fat: 50.0, fiber: 8.0 },
+    quickPortions: [100, 120, 150],
+    ingredients: ['Whole Milk', 'Basmati Rice', 'Sugar', 'Cardamom', 'Almonds & Cashews'],
+    per100g: { calories: 145, protein: 3.5, carbs: 24.0, fat: 4.0, fiber: 0.5 },
   },
 
   // â”€â”€â”€ Fruits & Nuts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -632,6 +1020,22 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 52, protein: 0.3, carbs: 13.8, fat: 0.2, fiber: 2.4 },
   },
   {
+    id: 'mango_fresh',
+    name: 'Fresh Mango (Aam)',
+    aliases: ['mango', 'aam', 'alphonso', 'ripe mango'],
+    category: 'Fruits & Nuts',
+    portionType: 'count',
+    servingUnits: [
+      { label: 'Medium Mango (200g)', grams: 200 },
+      { label: 'Cup Slices (150g)', grams: 150 },
+      { label: 'Grams (g)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['Fresh Ripe Mango (Vitamin A, C, Natural Sugars)'],
+    per100g: { calories: 60, protein: 0.8, carbs: 15.0, fat: 0.4, fiber: 1.6 },
+  },
+  {
     id: 'almonds_badam',
     name: 'Almonds (Badam)',
     aliases: ['almonds', 'badam', 'soaked badam', 'raw almonds'],
@@ -647,8 +1051,24 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     ingredients: ['100% Whole Almonds (Vitamin E, Healthy Monounsaturated Fats)'],
     per100g: { calories: 579, protein: 21.0, carbs: 22.0, fat: 50.0, fiber: 12.5 },
   },
+  {
+    id: 'peanut_butter',
+    name: 'Peanut Butter',
+    aliases: ['peanut butter', 'pb', 'mungfali butter', 'roasted peanut butter'],
+    category: 'Breakfast & Snacks',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Tablespoon (16g)', grams: 16 },
+      { label: '2 Tablespoons (32g)', grams: 32 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [16, 32, 50],
+    ingredients: ['100% Roasted Peanuts', 'Pinch of Salt'],
+    per100g: { calories: 588, protein: 25.0, carbs: 20.0, fat: 50.0, fiber: 8.0 },
+  },
 
-  // â”€â”€â”€ Fitness Supplements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€â”€ Fitness Supplements & Beverages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'whey_protein_isolate',
     name: 'Whey Protein Powder',
@@ -678,11 +1098,9 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     ],
     defaultUnitIndex: 0,
     quickPortions: [1, 2],
-    ingredients: ['100% Micronized Pure Creatine Monohydrate'],
+    ingredients: ['100% Micronized Pure Creatine Monohydrate (ATP energy & muscle cell hydration)'],
     per100g: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   },
-
-  // â”€â”€â”€ Beverages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'indian_chai',
     name: 'Indian Chai / Milk Tea (with 1 tsp Sugar)',
@@ -698,13 +1116,28 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     ingredients: ['Black Tea Leaves', 'Boiled Milk', 'Water', 'Ginger & Cardamom', '1 tsp Sugar'],
     per100g: { calories: 60, protein: 2.0, carbs: 8.5, fat: 2.0, fiber: 0 },
   },
+  {
+    id: 'coconut_water',
+    name: 'Fresh Coconut Water (Nariyal Pani)',
+    aliases: ['coconut water', 'nariyal pani', 'daab', 'elaneer'],
+    category: 'Beverages',
+    portionType: 'volume',
+    servingUnits: [
+      { label: '1 Fresh Coconut / Glass (250ml)', grams: 250 },
+      { label: 'Milliliters (ml)', grams: 1 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [1, 2],
+    ingredients: ['100% Natural Fresh Tender Coconut Water (Electrolytes, Potassium)'],
+    per100g: { calories: 19, protein: 0.7, carbs: 3.7, fat: 0.2, fiber: 1.1 },
+  },
 ];
 
 /**
  * Searches the preloaded food database with fuzzy matching and alias normalization.
  */
 export function searchLocalFoods(query: string): FoodEntry[] {
-  if (!query || !query.trim()) return POPULAR_FOODS_DATABASE.slice(0, 12);
+  if (!query || !query.trim()) return POPULAR_FOODS_DATABASE.slice(0, 15);
   const q = query.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
 
   return POPULAR_FOODS_DATABASE.filter(f => {

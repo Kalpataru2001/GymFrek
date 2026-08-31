@@ -11,6 +11,7 @@ import {
   searchLocalFoods,
   calculateFoodNutrition,
 } from '@/lib/food-database';
+import type { ParsedFoodResult } from '@/lib/ai-nutrition-engine';
 import type { DailyLog, WorkoutAttendance, DayFoodItem } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
 import ProgressBar from '@/components/ui/ProgressBar';
@@ -34,9 +35,13 @@ import {
   Leaf,
   Scale,
   Edit3,
+  Bot,
+  Send,
+  Loader2,
 } from 'lucide-react';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
+type EntryMode = 'smart_search' | 'ai_assistant' | 'manual';
 
 export default function CalendarPage() {
   const { user } = useAuth();
@@ -47,16 +52,23 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Smart Food Entry State
+  // Modal & Entry Mode State
   const [showAddFood, setShowAddFood] = useState(false);
+  const [entryMode, setEntryMode] = useState<EntryMode>('smart_search');
   const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
+
+  // Mode 1: Smart Search State
   const [foodSearchQuery, setFoodSearchQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState<FoodEntry>(POPULAR_FOODS_DATABASE[0]);
   const [foodQuantity, setFoodQuantity] = useState<number>(100);
   const [selectedUnitIndex, setSelectedUnitIndex] = useState<number>(0);
-  const [isManualOverride, setIsManualOverride] = useState(false);
 
-  // Manual custom inputs
+  // Mode 2: AI Assistant State
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<ParsedFoodResult | null>(null);
+
+  // Mode 3: Manual Custom Inputs
   const [manualName, setManualName] = useState('');
   const [manualCalories, setManualCalories] = useState(150);
   const [manualProtein, setManualProtein] = useState(10);
@@ -224,7 +236,6 @@ export default function CalendarPage() {
   const handleSelectFood = (food: FoodEntry) => {
     setSelectedFood(food);
     setSelectedUnitIndex(0);
-    // Set appropriate initial quantity
     if (food.portionType === 'weight') {
       setFoodQuantity(food.quickPortions[1] || 100);
     } else {
@@ -236,41 +247,71 @@ export default function CalendarPage() {
   const handlePortionUnitChange = (unitIdx: number) => {
     setSelectedUnitIndex(unitIdx);
     const unit = selectedFood.servingUnits[unitIdx];
-    // If user selects a specific serving unit (e.g. Bowl 150g or Plate 250g), set quantity to 1 count
     if (unit.grams > 1 && foodQuantity > 10) {
       setFoodQuantity(1);
     } else if (unit.grams === 1 && foodQuantity <= 5) {
-      // If user switches back to Grams, restore a standard gram quantity
       setFoodQuantity(selectedFood.quickPortions[1] || 100);
     }
   };
 
   const handleQuickPortionClick = (qty: number) => {
-    // When clicking a quick portion chip:
-    // If weight-based, ensure unit is Grams (index 0) so qty represents exact grams
-    if (selectedFood.portionType === 'weight') {
-      setSelectedUnitIndex(0);
-    } else {
-      setSelectedUnitIndex(0);
-    }
+    setSelectedUnitIndex(0);
     setFoodQuantity(qty);
   };
 
   const startCustomFood = (name: string) => {
     setManualName(name);
-    setIsManualOverride(true);
+    setEntryMode('manual');
     setFoodSearchQuery('');
   };
 
-  const handleAddAutoFood = async () => {
+  // Run AI Nutrition calculation
+  const handleCalculateWithAI = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/ai-nutrition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: aiPrompt }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAiResult(data);
+        setToast({ message: 'AI calculated meal nutrition successfully!', type: 'success' });
+      } else {
+        setToast({ message: data.error || 'AI could not parse meal', type: 'error' });
+      }
+    } catch (e) {
+      console.error(e);
+      setToast({ message: 'Failed to contact AI nutrition service', type: 'error' });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Add Logged Food Item (from Smart Search, AI, or Manual)
+  const handleAddFoodToDay = async () => {
     if (!selectedDate) return;
 
-    let item: DayFoodItem;
+    let itemsToAdd: DayFoodItem[] = [];
 
-    if (isManualOverride) {
+    if (entryMode === 'ai_assistant') {
+      if (!aiResult) return;
+      itemsToAdd = aiResult.items.map((it, idx) => ({
+        id: `food_ai_${Date.now()}_${idx}`,
+        mealType: selectedMealType,
+        name: it.name,
+        calories: it.calories,
+        protein: it.protein,
+        carbs: it.carbs,
+        fat: it.fat,
+        fiber: it.fiber,
+      }));
+    } else if (entryMode === 'manual') {
       if (!manualName.trim()) return;
-      item = {
-        id: `food_${Date.now()}`,
+      itemsToAdd = [{
+        id: `food_manual_${Date.now()}`,
         mealType: selectedMealType,
         name: manualName,
         calories: Number(manualCalories),
@@ -278,7 +319,7 @@ export default function CalendarPage() {
         carbs: Number(manualCarbs),
         fat: Number(manualFat),
         fiber: Number(manualFiber),
-      };
+      }];
     } else {
       if (!calculatedNutrition) return;
       const unit = selectedFood.servingUnits[selectedUnitIndex];
@@ -287,7 +328,7 @@ export default function CalendarPage() {
         ? `${calculatedNutrition.totalGrams}g ${selectedFood.name.split(' /')[0]}`
         : `${foodQuantity}x ${selectedFood.name.split(' /')[0]} (${unit?.label})`;
 
-      item = {
+      itemsToAdd = [{
         id: `food_${Date.now()}`,
         mealType: selectedMealType,
         name: displayTitle,
@@ -297,10 +338,10 @@ export default function CalendarPage() {
         carbs: calculatedNutrition.carbs,
         fat: calculatedNutrition.fat,
         fiber: calculatedNutrition.fiber,
-      };
+      }];
     }
 
-    const newFoods = [...(activeLog.foods || []), item];
+    const newFoods = [...(activeLog.foods || []), ...itemsToAdd];
     const totalCalories = newFoods.reduce((sum, f) => sum + (f.calories || 0), 0);
     const totalProtein = Math.round(newFoods.reduce((sum, f) => sum + (f.protein || 0), 0) * 10) / 10;
     const totalCarbs = Math.round(newFoods.reduce((sum, f) => sum + (f.carbs || 0), 0) * 10) / 10;
@@ -319,8 +360,9 @@ export default function CalendarPage() {
 
     await saveLogUpdate(updated);
     setShowAddFood(false);
-    setIsManualOverride(false);
-    setToast({ message: `Added ${item.name} to ${item.mealType}!`, type: 'success' });
+    setAiResult(null);
+    setAiPrompt('');
+    setToast({ message: `Added items to ${selectedMealType}!`, type: 'success' });
   };
 
   const handleRemoveFood = async (foodId: string) => {
@@ -362,7 +404,7 @@ export default function CalendarPage() {
             Attendance & Daily Growth Tracker
           </h1>
           <p className="text-gray-400 mt-1">
-            Log foods and workouts with instant smart ingredient and calorie auto-calculation
+            Log Indian & global foods with AI nutrition calculation and instant macro tracking
           </p>
         </div>
 
@@ -528,7 +570,7 @@ export default function CalendarPage() {
       {/* Day Inspector & Log Modal */}
       <Modal
         isOpen={!!selectedDate}
-        onClose={() => { setSelectedDate(null); setShowAddFood(false); setIsManualOverride(false); }}
+        onClose={() => { setSelectedDate(null); setShowAddFood(false); }}
         title={selectedDate ? `Daily Log : ${formattedSelectedDate}` : ''}
         size="lg"
       >
@@ -598,7 +640,7 @@ export default function CalendarPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => { setShowAddFood(s => !s); setIsManualOverride(false); }}
+                onClick={() => { setShowAddFood(s => !s); setAiResult(null); }}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -606,20 +648,48 @@ export default function CalendarPage() {
               </button>
             </div>
 
-            {/* Smart Auto-Calculation Form */}
+            {/* Smart Auto-Calculation Form Container */}
             {showAddFood && (
               <div className="bg-gray-750 p-4 rounded-xl border border-orange-500/50 space-y-4 shadow-lg">
-                <div className="flex items-center justify-between border-b border-gray-700 pb-2.5">
-                  <span className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" /> Smart Auto-Nutrient Calculator
-                  </span>
+                {/* Mode Selector Tabs: Smart Search, AI Assistant, Manual Entry */}
+                <div className="flex items-center bg-gray-800 p-1 rounded-xl border border-gray-700">
                   <button
                     type="button"
-                    onClick={() => setIsManualOverride(s => !s)}
-                    className="text-[11px] text-gray-400 hover:text-orange-300 underline flex items-center gap-1"
+                    onClick={() => setEntryMode('smart_search')}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      entryMode === 'smart_search'
+                        ? 'bg-orange-500 text-white shadow-md'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
                   >
-                    <Edit3 className="w-3 h-3" />
-                    {isManualOverride ? 'Switch to Smart Search' : 'Manual Entry'}
+                    <Search className="w-3.5 h-3.5" />
+                    <span>Instant Search</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode('ai_assistant')}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      entryMode === 'ai_assistant'
+                        ? 'bg-purple-600 text-white shadow-md'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    <Bot className="w-3.5 h-3.5 text-purple-200" />
+                    <span>AI Assistant</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode('manual')}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      entryMode === 'manual'
+                        ? 'bg-gray-700 text-white shadow-md'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Manual</span>
                   </button>
                 </div>
 
@@ -644,18 +714,18 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {!isManualOverride ? (
+                {/* â”€â”€â”€ TAB 1: SMART SEARCH & INDIAN FOOD DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {entryMode === 'smart_search' && (
                   <>
-                    {/* Food Search Box */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-medium text-gray-300">
-                        Search Food (e.g. Bhindi, Roti, Soya, Rice, Egg, Paneer, Chicken, Oats)
+                        Search Indian or Global Food (e.g. Bhindi, Roti, Dal, Paneer, Rice, Egg, Biryani, Chai)
                       </label>
                       <div className="relative">
                         <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                         <input
                           type="text"
-                          placeholder="Type food name in English or Hindi (e.g. bhindi, dal, roti, egg)..."
+                          placeholder="Type food in English/Hindi (e.g. bhindi, dal makhani, roti, chicken biryani)..."
                           value={foodSearchQuery}
                           onChange={e => setFoodSearchQuery(e.target.value)}
                           className="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg text-xs focus:outline-none focus:border-orange-500"
@@ -681,15 +751,29 @@ export default function CalendarPage() {
                             ))
                           ) : (
                             <div className="p-3 text-center space-y-2">
-                              <p className="text-xs text-gray-400">No exact match for &quot;{foodSearchQuery}&quot;</p>
-                              <button
-                                type="button"
-                                onClick={() => startCustomFood(foodSearchQuery)}
-                                className="inline-flex items-center gap-1 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                                Add &quot;{foodSearchQuery}&quot; as Custom Food
-                              </button>
+                              <p className="text-xs text-gray-400">No match in local library for &quot;{foodSearchQuery}&quot;</p>
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAiPrompt(foodSearchQuery);
+                                    setEntryMode('ai_assistant');
+                                    handleCalculateWithAI();
+                                  }}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                  <Bot className="w-3.5 h-3.5" />
+                                  Ask AI to Calculate &quot;{foodSearchQuery}&quot;
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => startCustomFood(foodSearchQuery)}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  Manual
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -698,12 +782,12 @@ export default function CalendarPage() {
 
                     {/* Quick Popular Food Chips */}
                     <div className="space-y-1">
-                      <span className="text-[11px] text-gray-400">Quick Picks:</span>
+                      <span className="text-[11px] text-gray-400">Quick Indian Picks:</span>
                       <div className="flex flex-wrap gap-1.5">
                         {[
                           'bhindi_masala', 'roti_wheat', 'rice_white_cooked', 'dal_yellow_cooked',
-                          'soya_chunks', 'egg_boiled_whole', 'paneer_raw', 'chicken_breast_cooked',
-                          'banana_fresh', 'oats_cooked'
+                          'dal_makhani', 'paneer_raw', 'chicken_breast_cooked', 'chicken_biryani',
+                          'soya_chunks', 'egg_boiled_whole', 'poha_cooked', 'banana_fresh'
                         ].map(foodId => {
                           const food = POPULAR_FOODS_DATABASE.find(f => f.id === foodId);
                           if (!food) return null;
@@ -834,9 +918,104 @@ export default function CalendarPage() {
                       )}
                     </div>
                   </>
-                ) : (
-                  /* Custom / Manual Food Entry */
-                  <div className="space-y-3 bg-gray-750 p-4 rounded-xl border border-orange-500/40">
+                )}
+
+                {/* â”€â”€â”€ TAB 2: AI NATURAL LANGUAGE MEAL CALCULATOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {entryMode === 'ai_assistant' && (
+                  <div className="space-y-3 bg-gray-800/80 p-4 rounded-xl border border-purple-500/40">
+                    <div className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-wider">
+                      <Bot className="w-4 h-4" />
+                      AI Natural Language Meal Analyzer
+                    </div>
+                    <p className="text-[11px] text-gray-300">
+                      Type anything you ate in natural words (e.g. <em>&quot;2 butter rotis with 1 bowl dal makhani and 100g paneer&quot;</em> or <em>&quot;1 plate chicken biryani + 1 glass lassi&quot;</em>).
+                    </p>
+
+                    <div className="space-y-2">
+                      <textarea
+                        rows={3}
+                        value={aiPrompt}
+                        onChange={e => setAiPrompt(e.target.value)}
+                        placeholder="e.g. 2 wheat rotis, 1 katori bhindi masala, 1 cup curd and 2 boiled eggs"
+                        className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-2.5 text-xs focus:outline-none focus:border-purple-500"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleCalculateWithAI}
+                        disabled={aiLoading || !aiPrompt.trim()}
+                        className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md"
+                      >
+                        {aiLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Calculating Nutrition with AI...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Calculate with AI
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* AI Calculation Results Card */}
+                    {aiResult && (
+                      <div className="bg-gray-750 rounded-lg p-3.5 border border-purple-500/50 space-y-3 animate-fadeIn">
+                        <div className="flex items-center justify-between border-b border-gray-700 pb-2">
+                          <div>
+                            <span className="text-[10px] text-purple-300 font-bold uppercase block">AI Meal Breakdown</span>
+                            <h5 className="text-xs font-bold text-white">{aiResult.summaryTitle}</h5>
+                          </div>
+                          <span className="text-orange-400 font-extrabold text-sm flex items-center gap-1">
+                            <Flame className="w-4 h-4" /> {aiResult.totalCalories} kcal
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-1.5 text-center text-xs">
+                          <div className="bg-orange-500/20 rounded p-1.5">
+                            <p className="text-[10px] text-gray-400">Protein</p>
+                            <p className="font-bold text-white text-xs">{aiResult.totalProtein}g</p>
+                          </div>
+                          <div className="bg-blue-500/20 rounded p-1.5">
+                            <p className="text-[10px] text-gray-400">Carbs</p>
+                            <p className="font-bold text-white text-xs">{aiResult.totalCarbs}g</p>
+                          </div>
+                          <div className="bg-yellow-500/20 rounded p-1.5">
+                            <p className="text-[10px] text-gray-400">Fat</p>
+                            <p className="font-bold text-white text-xs">{aiResult.totalFat}g</p>
+                          </div>
+                          <div className="bg-green-500/20 rounded p-1.5">
+                            <p className="text-[10px] text-gray-400">Fiber</p>
+                            <p className="font-bold text-white text-xs">{aiResult.totalFiber}g</p>
+                          </div>
+                        </div>
+
+                        {/* Itemized List */}
+                        <div className="space-y-1 pt-1 border-t border-gray-700 text-xs text-gray-300">
+                          {aiResult.items.map((it, idx) => (
+                            <div key={idx} className="flex justify-between py-0.5">
+                              <span>{it.name}</span>
+                              <span className="font-medium text-gray-200">{it.calories} kcal ({it.protein}g P)</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {aiResult.ingredients.length > 0 && (
+                          <div className="pt-1.5 border-t border-gray-700 text-[11px] text-gray-300 flex items-start gap-1">
+                            <Leaf className="w-3 h-3 text-green-400 flex-shrink-0 mt-0.5" />
+                            <span><strong>Ingredients:</strong> {aiResult.ingredients.join(', ')}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* â”€â”€â”€ TAB 3: MANUAL CUSTOM FOOD ENTRY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {entryMode === 'manual' && (
+                  <div className="space-y-3 bg-gray-750 p-4 rounded-xl border border-gray-600">
                     <h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider">Custom Food Details</h4>
                     <div>
                       <label className="block text-xs font-medium text-gray-300 mb-1">Food Name</label>
@@ -891,12 +1070,15 @@ export default function CalendarPage() {
 
                 <button
                   type="button"
-                  onClick={handleAddAutoFood}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/20"
+                  onClick={handleAddFoodToDay}
+                  disabled={entryMode === 'ai_assistant' && !aiResult}
+                  className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/20"
                 >
                   <Plus className="w-4 h-4" />
                   <span>
-                    {isManualOverride
+                    {entryMode === 'ai_assistant'
+                      ? `Add AI Analyzed Meal to ${selectedMealType}`
+                      : entryMode === 'manual'
                       ? `Add "${manualName || 'Custom Food'}" to ${selectedMealType}`
                       : `Add ${selectedFood.portionType === 'weight' && selectedFood.servingUnits[selectedUnitIndex]?.grams === 1 ? `${foodQuantity}g` : `${foodQuantity}x`} ${selectedFood.name.split(' /')[0]} to ${selectedMealType}`}
                   </span>
