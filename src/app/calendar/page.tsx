@@ -5,6 +5,12 @@ import { useUser } from '@/contexts/UserContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { calculateDailyGrowthScore, DailyGrowthBreakdown } from '@/lib/calculations';
+import {
+  POPULAR_FOODS_DATABASE,
+  FoodEntry,
+  searchLocalFoods,
+  calculateFoodNutrition,
+} from '@/lib/food-database';
 import type { DailyLog, WorkoutAttendance, DayFoodItem } from '@/lib/types';
 import Modal from '@/components/ui/Modal';
 import ProgressBar from '@/components/ui/ProgressBar';
@@ -20,8 +26,11 @@ import {
   CalendarDays,
   Target,
   Trophy,
-  CheckCircle2,
   Sparkles,
+  Search,
+  Check,
+  Utensils,
+  Leaf,
 } from 'lucide-react';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
@@ -35,31 +44,26 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  // Quick add food form state in modal
-  const [newFood, setNewFood] = useState<{
-    mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-    name: string;
-    servingG: number;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    fiber: number;
-  }>({
-    mealType: 'lunch',
-    name: '',
-    servingG: 100,
-    calories: 150,
-    protein: 20,
-    carbs: 10,
-    fat: 3,
-    fiber: 2,
-  });
+  // Smart Food Entry State
   const [showAddFood, setShowAddFood] = useState(false);
+  const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
+  const [foodSearchQuery, setFoodSearchQuery] = useState('');
+  const [selectedFood, setSelectedFood] = useState<FoodEntry>(POPULAR_FOODS_DATABASE[0]);
+  const [foodQuantity, setFoodQuantity] = useState<number>(2);
+  const [selectedUnitIndex, setSelectedUnitIndex] = useState<number>(0);
+  const [isManualOverride, setIsManualOverride] = useState(false);
+
+  // Manual fallback inputs
+  const [manualName, setManualName] = useState('');
+  const [manualCalories, setManualCalories] = useState(150);
+  const [manualProtein, setManualProtein] = useState(10);
+  const [manualCarbs, setManualCarbs] = useState(20);
+  const [manualFat, setManualFat] = useState(3);
+  const [manualFiber, setManualFiber] = useState(2);
 
   // Month navigation
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth(); // 0-indexed
+  const month = currentDate.getMonth();
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -70,7 +74,7 @@ export default function CalendarPage() {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const jumpToday = () => setCurrentDate(new Date());
 
-  // Fetch monthly logs from Firestore
+  // Fetch monthly logs
   const fetchMonthLogs = async () => {
     if (!user) return;
     setLoading(true);
@@ -115,10 +119,17 @@ export default function CalendarPage() {
   // Calendar math
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
-  // Adjust so Monday = 0, Sunday = 6
   const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-
   const todayStr = new Date().toISOString().slice(0, 10);
+
+  const filteredFoods = useMemo(() => {
+    return searchLocalFoods(foodSearchQuery);
+  }, [foodSearchQuery]);
+
+  const calculatedNutrition = useMemo(() => {
+    if (!selectedFood) return null;
+    return calculateFoodNutrition(selectedFood, foodQuantity, selectedUnitIndex);
+  }, [selectedFood, foodQuantity, selectedUnitIndex]);
 
   // Month Statistics
   const monthStats = useMemo(() => {
@@ -170,7 +181,6 @@ export default function CalendarPage() {
     };
   }, [selectedDate, logs, user]);
 
-  // Recompute growth score for active log
   const activeBreakdown: DailyGrowthBreakdown = useMemo(() => {
     return calculateDailyGrowthScore(
       { calories: targets.calories, protein: targets.protein },
@@ -179,7 +189,6 @@ export default function CalendarPage() {
     );
   }, [activeLog, targets]);
 
-  // Save log update to Firestore
   const saveLogUpdate = async (updated: DailyLog) => {
     if (!user || !updated.date) return;
     const breakdown = calculateDailyGrowthScore(
@@ -193,14 +202,12 @@ export default function CalendarPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    // Optimistic UI update
     setLogs(prev => ({ ...prev, [updated.date]: docData }));
 
     const docRef = doc(db, 'dailyLogs', `${user.uid}_${updated.date}`);
     await setDoc(docRef, docData, { merge: true });
   };
 
-  // Toggle Attendance
   const setAttendance = async (att: WorkoutAttendance) => {
     if (!selectedDate) return;
     const updated: DailyLog = {
@@ -211,19 +218,51 @@ export default function CalendarPage() {
     setToast({ message: `Attendance marked as ${att}!`, type: 'success' });
   };
 
-  // Add Food Item
-  const handleAddFood = async () => {
-    if (!selectedDate || !newFood.name.trim()) return;
-    const item: DayFoodItem = {
-      id: `food_${Date.now()}`,
-      ...newFood,
-    };
+  const handleSelectFood = (food: FoodEntry) => {
+    setSelectedFood(food);
+    setSelectedUnitIndex(food.defaultUnitIndex);
+    setFoodSearchQuery('');
+  };
+
+  const handleAddAutoFood = async () => {
+    if (!selectedDate) return;
+
+    let item: DayFoodItem;
+
+    if (isManualOverride) {
+      if (!manualName.trim()) return;
+      item = {
+        id: `food_${Date.now()}`,
+        mealType: selectedMealType,
+        name: manualName,
+        calories: Number(manualCalories),
+        protein: Number(manualProtein),
+        carbs: Number(manualCarbs),
+        fat: Number(manualFat),
+        fiber: Number(manualFiber),
+      };
+    } else {
+      if (!calculatedNutrition) return;
+      const unitText = selectedFood.servingUnits[selectedUnitIndex]?.label || '';
+      item = {
+        id: `food_${Date.now()}`,
+        mealType: selectedMealType,
+        name: `${foodQuantity}x ${selectedFood.name} (${unitText})`,
+        servingG: calculatedNutrition.totalGrams,
+        calories: calculatedNutrition.calories,
+        protein: calculatedNutrition.protein,
+        carbs: calculatedNutrition.carbs,
+        fat: calculatedNutrition.fat,
+        fiber: calculatedNutrition.fiber,
+      };
+    }
+
     const newFoods = [...(activeLog.foods || []), item];
     const totalCalories = newFoods.reduce((sum, f) => sum + (f.calories || 0), 0);
-    const totalProtein = newFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
-    const totalCarbs = newFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
-    const totalFat = newFoods.reduce((sum, f) => sum + (f.fat || 0), 0);
-    const totalFiber = newFoods.reduce((sum, f) => sum + (f.fiber || 0), 0);
+    const totalProtein = Math.round(newFoods.reduce((sum, f) => sum + (f.protein || 0), 0) * 10) / 10;
+    const totalCarbs = Math.round(newFoods.reduce((sum, f) => sum + (f.carbs || 0), 0) * 10) / 10;
+    const totalFat = Math.round(newFoods.reduce((sum, f) => sum + (f.fat || 0), 0) * 10) / 10;
+    const totalFiber = Math.round(newFoods.reduce((sum, f) => sum + (f.fiber || 0), 0) * 10) / 10;
 
     const updated: DailyLog = {
       ...activeLog,
@@ -237,27 +276,16 @@ export default function CalendarPage() {
 
     await saveLogUpdate(updated);
     setShowAddFood(false);
-    setNewFood({
-      mealType: 'lunch',
-      name: '',
-      servingG: 100,
-      calories: 150,
-      protein: 20,
-      carbs: 10,
-      fat: 3,
-      fiber: 2,
-    });
     setToast({ message: `Added ${item.name} to ${item.mealType}!`, type: 'success' });
   };
 
-  // Remove Food Item
   const handleRemoveFood = async (foodId: string) => {
     const newFoods = (activeLog.foods || []).filter(f => f.id !== foodId);
     const totalCalories = newFoods.reduce((sum, f) => sum + (f.calories || 0), 0);
-    const totalProtein = newFoods.reduce((sum, f) => sum + (f.protein || 0), 0);
-    const totalCarbs = newFoods.reduce((sum, f) => sum + (f.carbs || 0), 0);
-    const totalFat = newFoods.reduce((sum, f) => sum + (f.fat || 0), 0);
-    const totalFiber = newFoods.reduce((sum, f) => sum + (f.fiber || 0), 0);
+    const totalProtein = Math.round(newFoods.reduce((sum, f) => sum + (f.protein || 0), 0) * 10) / 10;
+    const totalCarbs = Math.round(newFoods.reduce((sum, f) => sum + (f.carbs || 0), 0) * 10) / 10;
+    const totalFat = Math.round(newFoods.reduce((sum, f) => sum + (f.fat || 0), 0) * 10) / 10;
+    const totalFiber = Math.round(newFoods.reduce((sum, f) => sum + (f.fiber || 0), 0) * 10) / 10;
 
     const updated: DailyLog = {
       ...activeLog,
@@ -284,7 +312,7 @@ export default function CalendarPage() {
             Attendance & Daily Growth Tracker
           </h1>
           <p className="text-gray-400 mt-1">
-            Check-in daily workouts, log your nutrition, and track your daily growth score
+            Log your everyday foods by quantity â€” calories, protein & ingredients are auto-calculated!
           </p>
         </div>
 
@@ -354,7 +382,6 @@ export default function CalendarPage() {
 
       {/* Calendar Grid Container */}
       <div className="bg-gray-800 rounded-2xl border border-gray-700 p-5 shadow-xl">
-        {/* Days of Week Header */}
         <div className="grid grid-cols-7 gap-2 mb-2 text-center">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
             <div key={d} className="text-xs font-bold text-gray-400 uppercase py-2">
@@ -363,17 +390,14 @@ export default function CalendarPage() {
           ))}
         </div>
 
-        {/* Date Tiles Grid */}
         {loading ? (
           <div className="flex justify-center py-24"><LoadingSpinner size="lg" /></div>
         ) : (
           <div className="grid grid-cols-7 gap-2">
-            {/* Empty slots for previous month offset */}
             {Array.from({ length: startOffset }).map((_, idx) => (
               <div key={`empty-${idx}`} className="h-28 rounded-xl bg-gray-900/30 border border-gray-800/40 opacity-30" />
             ))}
 
-            {/* Days in Month */}
             {Array.from({ length: daysInMonth }).map((_, idx) => {
               const dayNum = idx + 1;
               const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
@@ -400,32 +424,29 @@ export default function CalendarPage() {
                       : 'border-gray-700 bg-gray-850 hover:bg-gray-750'
                   }`}
                 >
-                  {/* Top Row: Date & Status Badge */}
                   <div className="flex items-center justify-between w-full">
                     <span className={`text-sm font-bold ${isToday ? 'text-orange-400' : 'text-white'}`}>
                       {dayNum}
                       {isToday && <span className="ml-1 text-[10px] font-normal text-orange-400">Today</span>}
                     </span>
 
-                    {/* Attendance Icon */}
                     {hasCompleted && (
-                      <span className="flex items-center text-xs font-semibold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded" title="Workout Completed">
-                        🔥 Done
+                      <span className="flex items-center text-xs font-semibold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded">
+                        ðŸ”¥ Done
                       </span>
                     )}
                     {isRest && (
-                      <span className="flex items-center text-xs font-semibold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded" title="Rest Day">
-                        😴 Rest
+                      <span className="flex items-center text-xs font-semibold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">
+                        ðŸ˜´ Rest
                       </span>
                     )}
                     {isMissed && (
-                      <span className="flex items-center text-xs font-semibold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded" title="Missed Workout">
-                        ❌ Missed
+                      <span className="flex items-center text-xs font-semibold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded">
+                        âŒ Missed
                       </span>
                     )}
                   </div>
 
-                  {/* Middle Row: Calorie / Food Info */}
                   <div className="w-full space-y-0.5">
                     {log && log.totalCalories > 0 ? (
                       <>
@@ -441,11 +462,10 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  {/* Bottom Row: Daily Growth Score */}
                   <div className="w-full flex items-center justify-between pt-1 border-t border-gray-700/50">
                     <span className="text-[9px] text-gray-400 font-medium">Growth</span>
                     <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${hasData ? scoreColor : 'text-gray-500'}`}>
-                      {hasData ? `${score}%` : '—'}
+                      {hasData ? `${score}%` : 'â€”'}
                     </span>
                   </div>
                 </button>
@@ -455,15 +475,15 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* ─── Day Inspector & Log Modal ─────────────────────────────────────── */}
+      {/* Day Inspector & Log Modal */}
       <Modal
         isOpen={!!selectedDate}
         onClose={() => { setSelectedDate(null); setShowAddFood(false); }}
-        title={selectedDate ? `Log & Progress for ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}` : ''}
+        title={selectedDate ? `Daily Log â€” ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}` : ''}
         size="lg"
       >
         <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
-          {/* Section 1: Workout Attendance Check-In */}
+          {/* Section 1: Workout Attendance */}
           <div className="bg-gray-750 p-4 rounded-xl border border-gray-700 space-y-3">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <Target className="w-4 h-4 text-orange-400" />
@@ -471,9 +491,9 @@ export default function CalendarPage() {
             </h3>
             <div className="grid grid-cols-3 gap-2.5">
               {[
-                { val: 'completed', label: '🔥 Workout Done', activeCls: 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' },
-                { val: 'rest', label: '😴 Rest Day', activeCls: 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' },
-                { val: 'missed', label: '❌ Missed', activeCls: 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20' },
+                { val: 'completed', label: 'ðŸ”¥ Workout Done', activeCls: 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' },
+                { val: 'rest', label: 'ðŸ˜´ Rest Day', activeCls: 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' },
+                { val: 'missed', label: 'âŒ Missed', activeCls: 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20' },
               ].map(opt => (
                 <button
                   key={opt.val}
@@ -509,102 +529,280 @@ export default function CalendarPage() {
 
             <p className="text-xs text-gray-200 mb-3">{activeBreakdown.summary}</p>
 
-            {/* Micro progress bars */}
             <div className="space-y-1.5 pt-1 border-t border-gray-700/50">
               <ProgressBar label={`Protein: ${activeLog.totalProtein}g / ${targets.protein}g target`} value={activeLog.totalProtein} max={targets.protein} color="orange" height="sm" />
               <ProgressBar label={`Calories: ${activeLog.totalCalories} kcal / ${targets.calories} kcal budget`} value={activeLog.totalCalories} max={targets.calories} color="blue" height="sm" />
             </div>
           </div>
 
-          {/* Section 3: Meals & Foods Eaten Today */}
+          {/* Section 3: Smart Auto-Nutrient Food Logger */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-orange-400" />
+                <Utensils className="w-4 h-4 text-orange-400" />
                 Foods Eaten on This Day
               </h3>
               <button
                 type="button"
                 onClick={() => setShowAddFood(s => !s)}
-                className="inline-flex items-center gap-1 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1.5 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                {showAddFood ? 'Close Form' : 'Log Food'}
+                {showAddFood ? 'Close Form' : '+ Add Food'}
               </button>
             </div>
 
-            {/* Quick Add Food Form */}
+            {/* Smart Auto-Calculation Form */}
             {showAddFood && (
-              <div className="bg-gray-750 p-4 rounded-xl border border-orange-500/40 space-y-3">
-                <h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider">Quick Food Entry</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1">Meal Time</label>
-                    <select
-                      value={newFood.mealType}
-                      onChange={e => setNewFood(p => ({ ...p, mealType: e.target.value as any }))}
-                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500 capitalize"
-                    >
-                      {MEAL_TYPES.map(m => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1">Food Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 200g Chicken Breast"
-                      value={newFood.name}
-                      onChange={e => setNewFood(p => ({ ...p, name: e.target.value }))}
-                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1">Calories (kcal)</label>
-                    <input
-                      type="number"
-                      value={newFood.calories}
-                      onChange={e => setNewFood(p => ({ ...p, calories: Number(e.target.value) }))}
-                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1">Protein (g)</label>
-                    <input
-                      type="number"
-                      value={newFood.protein}
-                      onChange={e => setNewFood(p => ({ ...p, protein: Number(e.target.value) }))}
-                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1">Carbs (g)</label>
-                    <input
-                      type="number"
-                      value={newFood.carbs}
-                      onChange={e => setNewFood(p => ({ ...p, carbs: Number(e.target.value) }))}
-                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-1">Fat (g)</label>
-                    <input
-                      type="number"
-                      value={newFood.fat}
-                      onChange={e => setNewFood(p => ({ ...p, fat: Number(e.target.value) }))}
-                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
-                    />
+              <div className="bg-gray-750 p-4 rounded-xl border border-orange-500/50 space-y-4 shadow-lg">
+                <div className="flex items-center justify-between border-b border-gray-700 pb-2.5">
+                  <span className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Smart Auto-Nutrient Calculator
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsManualOverride(s => !s)}
+                    className="text-[11px] text-gray-400 hover:text-orange-300 underline"
+                  >
+                    {isManualOverride ? 'Switch to Auto-Calculate' : 'Switch to Manual Entry'}
+                  </button>
+                </div>
+
+                {/* Meal Time Selector */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5">Select Meal</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {MEAL_TYPES.map(m => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setSelectedMealType(m)}
+                        className={`py-1.5 rounded-lg text-xs font-medium capitalize border transition-all ${
+                          selectedMealType === m
+                            ? 'bg-orange-500 border-orange-500 text-white'
+                            : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
+                {!isManualOverride ? (
+                  <>
+                    {/* Food Search Box */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-medium text-gray-300">
+                        Type or Choose Food (e.g. Roti, Egg, Rice, Chicken, Banana)
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search food (e.g. maida roti, paneer, oats, egg)..."
+                          value={foodSearchQuery}
+                          onChange={e => setFoodSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg text-xs focus:outline-none focus:border-orange-500"
+                        />
+                      </div>
+
+                      {/* Dropdown Suggestions */}
+                      {foodSearchQuery.trim() !== '' && (
+                        <div className="max-h-40 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg p-1 space-y-1 shadow-lg">
+                          {filteredFoods.length > 0 ? (
+                            filteredFoods.map(f => (
+                              <button
+                                key={f.id}
+                                type="button"
+                                onClick={() => handleSelectFood(f)}
+                                className="w-full text-left px-3 py-1.5 rounded hover:bg-gray-700 text-xs text-white flex items-center justify-between"
+                              >
+                                <span>{f.name}</span>
+                                <span className="text-[10px] text-orange-400 font-medium">{f.category}</span>
+                              </button>
+                            ))
+                          ) : (
+                            <p className="text-xs text-gray-400 p-2 text-center">No matching food found. Try manual entry.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick Popular Food Chips */}
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-gray-400">Quick Picks:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          'roti_wheat', 'roti_maida', 'egg_boiled_whole',
+                          'rice_white_cooked', 'paneer_raw', 'chicken_breast_cooked',
+                          'banana_fresh', 'dal_yellow_cooked', 'oats_cooked'
+                        ].map(foodId => {
+                          const food = POPULAR_FOODS_DATABASE.find(f => f.id === foodId);
+                          if (!food) return null;
+                          const isCurrent = selectedFood?.id === food.id;
+                          return (
+                            <button
+                              key={food.id}
+                              type="button"
+                              onClick={() => handleSelectFood(food)}
+                              className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+                                isCurrent
+                                  ? 'bg-orange-500 border-orange-500 text-white font-semibold'
+                                  : 'bg-gray-700/80 border-gray-600 text-gray-300 hover:border-gray-500'
+                              }`}
+                            >
+                              {food.name.split(' (')[0]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Selected Food & Quantity Controls */}
+                    <div className="bg-gray-700/60 p-3.5 rounded-xl border border-gray-600 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-orange-400" />
+                          {selectedFood.name}
+                        </span>
+                        <span className="text-[10px] text-gray-400 bg-gray-800 px-2 py-0.5 rounded">
+                          {selectedFood.category}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-300 mb-1">
+                            Quantity / Count
+                          </label>
+                          <input
+                            type="number"
+                            min={0.5}
+                            step={0.5}
+                            value={foodQuantity}
+                            onChange={e => setFoodQuantity(Math.max(0.1, Number(e.target.value)))}
+                            className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-300 mb-1">
+                            Portion Unit
+                          </label>
+                          <select
+                            value={selectedUnitIndex}
+                            onChange={e => setSelectedUnitIndex(Number(e.target.value))}
+                            className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-orange-500"
+                          >
+                            {selectedFood.servingUnits.map((u, i) => (
+                              <option key={i} value={i}>{u.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Live Auto-Calculated Nutrition & Ingredients Display */}
+                      {calculatedNutrition && (
+                        <div className="bg-gray-800/90 rounded-lg p-3 border border-orange-500/30 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-300">Total Weight: <strong>{calculatedNutrition.totalGrams}g</strong></span>
+                            <span className="text-orange-400 font-extrabold text-sm">
+                              ðŸ”¥ {calculatedNutrition.calories} kcal
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-1.5 text-center text-xs">
+                            <div className="bg-orange-500/20 rounded p-1.5">
+                              <p className="text-[10px] text-gray-400">Protein</p>
+                              <p className="font-bold text-white text-xs">{calculatedNutrition.protein}g</p>
+                            </div>
+                            <div className="bg-blue-500/20 rounded p-1.5">
+                              <p className="text-[10px] text-gray-400">Carbs</p>
+                              <p className="font-bold text-white text-xs">{calculatedNutrition.carbs}g</p>
+                            </div>
+                            <div className="bg-yellow-500/20 rounded p-1.5">
+                              <p className="text-[10px] text-gray-400">Fat</p>
+                              <p className="font-bold text-white text-xs">{calculatedNutrition.fat}g</p>
+                            </div>
+                            <div className="bg-green-500/20 rounded p-1.5">
+                              <p className="text-[10px] text-gray-400">Fiber</p>
+                              <p className="font-bold text-white text-xs">{calculatedNutrition.fiber}g</p>
+                            </div>
+                          </div>
+
+                          {/* Ingredients Breakdown */}
+                          {calculatedNutrition.ingredients.length > 0 && (
+                            <div className="pt-1.5 border-t border-gray-700 text-[11px] text-gray-300 flex items-start gap-1.5">
+                              <Leaf className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />
+                              <span><strong>Ingredients:</strong> {calculatedNutrition.ingredients.join(', ')}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* Manual Override Mode */
+                  <div className="space-y-3 bg-gray-750 p-3 rounded-lg border border-gray-600">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-1">Food Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Homemade Sabzi & Rice"
+                        value={manualName}
+                        onChange={e => setManualName(e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="text-gray-300">Calories (kcal)</label>
+                        <input
+                          type="number"
+                          value={manualCalories}
+                          onChange={e => setManualCalories(Number(e.target.value))}
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-300">Protein (g)</label>
+                        <input
+                          type="number"
+                          value={manualProtein}
+                          onChange={e => setManualProtein(Number(e.target.value))}
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-300">Carbs (g)</label>
+                        <input
+                          type="number"
+                          value={manualCarbs}
+                          onChange={e => setManualCarbs(Number(e.target.value))}
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-gray-300">Fat (g)</label>
+                        <input
+                          type="number"
+                          value={manualFat}
+                          onChange={e => setManualFat(Number(e.target.value))}
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="button"
-                  onClick={handleAddFood}
-                  disabled={!newFood.name.trim()}
-                  className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2 rounded-lg text-xs transition-colors"
+                  onClick={handleAddAutoFood}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/20"
                 >
-                  ✓ Add Food to {newFood.mealType}
+                  <Plus className="w-4 h-4" />
+                  Add {foodQuantity}x {selectedFood?.name.split(' (')[0] || 'Food'} to {selectedMealType}
                 </button>
               </div>
             )}
@@ -622,7 +820,7 @@ export default function CalendarPage() {
                         <p className="text-xs font-semibold text-white">{food.name}</p>
                       </div>
                       <p className="text-[11px] text-gray-300 mt-1">
-                        {food.calories} kcal · <strong className="text-orange-300">{food.protein}g P</strong> · {food.carbs}g C · {food.fat}g F
+                        <strong>{food.calories} kcal</strong> Â· <span className="text-orange-300 font-semibold">{food.protein}g Protein</span> Â· {food.carbs}g Carbs Â· {food.fat}g Fat
                       </p>
                     </div>
 
@@ -638,7 +836,7 @@ export default function CalendarPage() {
               </div>
             ) : (
               <p className="text-xs text-gray-400 bg-gray-700/30 p-4 rounded-lg text-center border border-gray-700">
-                No meals logged for this day yet. Click <strong>Log Food</strong> above to add what you ate!
+                No meals logged for this day yet. Click <strong>+ Add Food</strong> above to log your food!
               </p>
             )}
           </div>
