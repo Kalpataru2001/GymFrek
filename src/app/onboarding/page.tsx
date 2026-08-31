@@ -109,7 +109,7 @@ export default function OnboardingPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white">💪 <span className="text-orange-400">GymFrek</span></h1>
-          <p className="text-gray-400 mt-2">Let&apos;s set up your profile — Step {step} of {TOTAL_STEPS}</p>
+          <p className="text-gray-400 mt-2">Let&apos;s set up your profile - Step {step} of {TOTAL_STEPS}</p>
         </div>
 
         {/* Progress bar */}
@@ -161,8 +161,8 @@ export default function OnboardingPage() {
             <div className="space-y-5">
               <h2 className="text-xl font-semibold text-white">Experience Level</h2>
               {([
-                { val: 'beginner', label: 'Beginner', desc: '0–6 months · Learning the basics', icon: '🌱' },
-                { val: 'intermediate', label: 'Intermediate', desc: '6 months – 2 years · Building strength', icon: '⚡' },
+                { val: 'beginner', label: 'Beginner', desc: '0-6 months · Learning the basics', icon: '🌱' },
+                { val: 'intermediate', label: 'Intermediate', desc: '6 months - 2 years · Building strength', icon: '⚡' },
                 { val: 'advanced', label: 'Advanced', desc: '2+ years · Optimizing performance', icon: '🔥' },
               ] as { val: FitnessLevel; label: string; desc: string; icon: string }[]).map(opt => (
                 <div key={opt.val} onClick={() => set('fitnessLevel', opt.val)} className={selCard(form.fitnessLevel === opt.val)}>
@@ -264,9 +264,9 @@ export default function OnboardingPage() {
                   className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500">
                   {([
                     ['sedentary', 'Sedentary (little/no exercise)'],
-                    ['light', 'Lightly Active (1–3 days/week)'],
-                    ['moderate', 'Moderately Active (3–5 days/week)'],
-                    ['active', 'Very Active (6–7 days/week)'],
+                    ['light', 'Lightly Active (1-3 days/week)'],
+                    ['moderate', 'Moderately Active (3-5 days/week)'],
+                    ['active', 'Very Active (6-7 days/week)'],
                     ['very_active', 'Extra Active (athlete/physical job)'],
                   ] as [ActivityLevel, string][]).map(([v, l]) => (
                     <option key={v} value={v}>{l}</option>

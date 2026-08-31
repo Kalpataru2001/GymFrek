@@ -1,9 +1,9 @@
 ﻿/**
- * GymFrek â€” Workout Plan Engine
+ * GymFrek - Workout Plan Engine
  * Generates structured weekly workout plans based on fitness level, goal, and equipment.
  */
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Types --------------------------------------------------------------------
 
 export type FitnessLevel = 'beginner' | 'intermediate' | 'advanced';
 export type Goal = 'lose_weight' | 'maintain' | 'gain_muscle' | 'improve_fitness';
@@ -42,7 +42,7 @@ export interface WorkoutPlan {
   weeklyProgressionNote: string;
 }
 
-// â”€â”€â”€ Typo Normalizer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Typo Normalizer ----------------------------------------------------------
 
 export function normalizeGymQuery(input: string): string {
   if (!input) return '';
@@ -63,7 +63,7 @@ export function normalizeGymQuery(input: string): string {
   return s;
 }
 
-// â”€â”€â”€ Verified Alternative Videos Database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Verified Alternative Videos Database -------------------------------------
 export const EXERCISE_ALTERNATIVE_VIDEOS: Record<string, string[]> = {
   // Squats & Legs
   legs_dumbbell_squat: ['MeIiIdhvXT4', 'aclHkVaku9U', 'bEv6CCg2BC8', 'ultWZbUMPL8'],
@@ -106,7 +106,7 @@ export const EXERCISE_ALTERNATIVE_VIDEOS: Record<string, string[]> = {
   cardio_hiit: ['auBLPXO8Fww', '3gK-mYmO6Qk', 'u3zgHI8QnqE', 'iSSAk4XCsRA'],
 };
 
-// â”€â”€â”€ Exercise Database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Exercise Database --------------------------------------------------------
 
 interface ExerciseDB {
   full_gym: Exercise;
@@ -150,7 +150,7 @@ function ex(
  * Comprehensive exercise database with Gym Machines, Cardio, Barbells, Dumbbells, Bodyweight & Stretching.
  */
 const EXERCISE_DB: Record<string, ExerciseDB> = {
-  // â”€â”€ Cardio & Conditioning (New & Complete) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Cardio & Conditioning (New & Complete) --------------------------------
   cardio_treadmill: {
     full_gym: ex(
       'Treadmill Incline Walk / Running', 1, '15-20 min', '60s', 'Cardio & Conditioning',
@@ -218,7 +218,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Dumbbell & Barbell Squats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Dumbbell & Barbell Squats ----------------------------------------------
   legs_squat: {
     full_gym: ex(
       'Barbell Back Squat', 4, '6-10', '90s', 'Quads / Glutes',
@@ -254,7 +254,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Machine & Free-Weight Chest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Machine & Free-Weight Chest -------------------------------------------
   chest_machine_press: {
     full_gym: ex(
       'Machine Chest Press (Seated Chest Press)', 3, '10-12', '60s', 'Chest',
@@ -355,7 +355,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Machine & Free-Weight Legs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Machine & Free-Weight Legs ---------------------------------------------
   legs_machine_press: {
     full_gym: ex(
       'Leg Press (Machine)', 4, '10-12', '75s', 'Quads / Glutes',
@@ -422,7 +422,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Back & Machine Rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Back & Machine Rows ---------------------------------------------------
   back_machine_row: {
     full_gym: ex(
       'Seated Cable Row / Machine Row', 3, '10-12', '60s', 'Back',
@@ -522,7 +522,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Shoulders & Overhead â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Shoulders & Overhead --------------------------------------------------
   shoulder_press_compound: {
     full_gym: ex(
       'Overhead Barbell Military Press / Machine Shoulder Press', 4, '6-10', '90s', 'Shoulders',
@@ -589,7 +589,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Arms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Arms ------------------------------------------------------------------
   arms_biceps: {
     full_gym: ex(
       'Barbell Bicep Curl / Preacher Machine Curl', 3, '10-12', '60s', 'Biceps',
@@ -656,7 +656,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Core / Abs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Core / Abs ------------------------------------------------------------
   core_plank: {
     full_gym: ex(
       'Hanging Leg Raise / Cable Crunch', 3, '12-15', '60s', 'Core / Abs',
@@ -690,7 +690,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
     ),
   },
 
-  // â”€â”€ Stretching & Mobility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Stretching & Mobility -------------------------------------------------
   stretching_full_body: {
     full_gym: ex(
       'Full Body Dynamic & Static Stretching Routine', 3, '30-45 sec per stretch', '15s', 'Mobility & Stretching',
@@ -725,7 +725,7 @@ const EXERCISE_DB: Record<string, ExerciseDB> = {
   },
 };
 
-// â”€â”€â”€ Plan Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Plan Generator ---------------------------------------------------------
 
 export function generateWorkoutPlan(
   level: FitnessLevel = 'beginner',

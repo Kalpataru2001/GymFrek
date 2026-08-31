@@ -118,7 +118,7 @@ export default function ProfilePage() {
           ].map(s=>(
             <div key={s.label} className="bg-gray-800 rounded-xl border border-gray-700 p-4 text-center">
               <p className="text-xs text-gray-400 mb-1">{s.label}</p>
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value??'—'}</p>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value??'-'}</p>
               <p className="text-xs text-gray-500 mt-1 capitalize">{s.sub}</p>
             </div>
           ))}

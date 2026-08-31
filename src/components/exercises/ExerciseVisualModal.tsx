@@ -210,7 +210,7 @@ export default function ExerciseVisualModal({ exercise, isOpen, onClose }: Exerc
             <ul className="space-y-1.5 text-xs text-gray-300">
               {exercise.tips.map((tip, idx) => (
                 <li key={idx} className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">â€¢</span>
+                  <span className="text-emerald-400 font-bold">•</span>
                   <span>{tip}</span>
                 </li>
               ))}
@@ -228,7 +228,7 @@ export default function ExerciseVisualModal({ exercise, isOpen, onClose }: Exerc
             <ul className="space-y-1.5 text-xs text-gray-300">
               {exercise.commonMistakes.map((mistake, idx) => (
                 <li key={idx} className="flex items-start gap-2">
-                  <span className="text-rose-400 font-bold">â€¢</span>
+                  <span className="text-rose-400 font-bold">•</span>
                   <span>{mistake}</span>
                 </li>
               ))}

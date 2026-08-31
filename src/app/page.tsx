@@ -131,7 +131,7 @@ export default function LandingPage() {
 
           {/* Subtext */}
           <p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Get personalized workout plans, track your nutrition, and monitor your progress — all in
+            Get personalized workout plans, track your nutrition, and monitor your progress - all in
             one beautifully designed, completely free platform.
           </p>
 
@@ -260,7 +260,7 @@ export default function LandingPage() {
             <StepCard
               step={2}
               title="Get Your Plan"
-              description="Receive a customized workout and nutrition plan matched to your level — Beginner, Intermediate, or Advanced."
+              description="Receive a customized workout and nutrition plan matched to your level - Beginner, Intermediate, or Advanced."
             />
             <StepCard
               step={3}

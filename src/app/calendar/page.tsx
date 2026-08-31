@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
@@ -637,7 +637,7 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* â”€â”€â”€ DYNAMIC HEALTH & COLOR CODING LEGEND â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* --- DYNAMIC HEALTH & COLOR CODING LEGEND --------------------------- */}
         <div className="pt-4 border-t border-gray-700/60">
           <div className="flex items-center gap-1.5 text-xs font-bold text-gray-300 mb-3">
             <Info className="w-4 h-4 text-orange-400" />
@@ -652,7 +652,7 @@ export default function CalendarPage() {
                 <span className="text-xs font-bold text-emerald-300">Champion Day</span>
               </div>
               <p className="text-[10px] text-gray-300 leading-tight">
-                Workout finished + hit protein & calorie goals (Score â‰¥ 75%).
+                Workout finished + hit protein &amp; calorie goals (Score &ge; 75%).
               </p>
             </div>
 
@@ -703,7 +703,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* â”€â”€â”€ DAY INSPECTOR MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* --- DAY INSPECTOR MODAL --------------------------------------------- */}
       <Modal
         isOpen={!!selectedDate}
         onClose={() => { setSelectedDate(null); setShowAddFood(false); }}
@@ -864,7 +864,7 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {/* â”€â”€â”€ TAB 1: SMART SEARCH & MASTER FOOD DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* --- TAB 1: SMART SEARCH & MASTER FOOD DB ------------------------- */}
                 {entryMode === 'smart_search' && (
                   <>
                     <div className="space-y-1.5">
@@ -1070,7 +1070,7 @@ export default function CalendarPage() {
                   </>
                 )}
 
-                {/* â”€â”€â”€ TAB 2: AI NATURAL LANGUAGE MEAL CALCULATOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* --- TAB 2: AI NATURAL LANGUAGE MEAL CALCULATOR -------------------- */}
                 {entryMode === 'ai_assistant' && (
                   <div className="space-y-3 bg-gray-800/80 p-4 rounded-xl border border-purple-500/40">
                     <div className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-wider">
@@ -1163,7 +1163,7 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {/* â”€â”€â”€ TAB 3: MANUAL CUSTOM FOOD ENTRY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* --- TAB 3: MANUAL CUSTOM FOOD ENTRY ------------------------------ */}
                 {entryMode === 'manual' && (
                   <div className="space-y-3 bg-gray-750 p-4 rounded-xl border border-gray-600">
                     <h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider">Custom Food Details</h4>

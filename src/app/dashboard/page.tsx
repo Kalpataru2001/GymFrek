@@ -55,9 +55,9 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="BMI" value={bmi.toFixed(1)} unit={profile?.bmiCategory} icon={<Target className="w-5 h-5"/>} color={bmi < 18.5 ? 'blue' : bmi < 25 ? 'green' : bmi < 30 ? 'orange' : 'purple'}/>
-        <StatCard title="Daily Calories" value={macros?.calories ?? '—'} unit="kcal" icon={<Flame className="w-5 h-5"/>} color="orange"/>
-        <StatCard title="Current Weight" value={profile?.weightKg ?? '—'} unit="kg" icon={<Weight className="w-5 h-5"/>} color="blue"/>
-        <StatCard title="Water Goal" value={macros?.water ?? '—'} unit="ml" icon={<Droplets className="w-5 h-5"/>} color="blue"/>
+        <StatCard title="Daily Calories" value={macros?.calories ?? '-'} unit="kcal" icon={<Flame className="w-5 h-5"/>} color="orange"/>
+        <StatCard title="Current Weight" value={profile?.weightKg ?? '-'} unit="kg" icon={<Weight className="w-5 h-5"/>} color="blue"/>
+        <StatCard title="Water Goal" value={macros?.water ?? '-'} unit="ml" icon={<Droplets className="w-5 h-5"/>} color="blue"/>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -66,10 +66,10 @@ export default function DashboardPage() {
           <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2"><Apple className="w-5 h-5 text-orange-400"/>Daily Nutrition Goals</h2>
             <div className="space-y-3">
-              <ProgressBar label={`Protein — ${macros.protein}g target`} value={0} max={macros.protein} color="orange" showLabel/>
-              <ProgressBar label={`Carbs — ${macros.carbs}g target`} value={0} max={macros.carbs} color="blue" showLabel/>
-              <ProgressBar label={`Fat — ${macros.fat}g target`} value={0} max={macros.fat} color="yellow" showLabel/>
-              <ProgressBar label={`Fiber — ${macros.fiber}g target`} value={0} max={macros.fiber} color="green" showLabel/>
+              <ProgressBar label={`Protein - ${macros.protein}g target`} value={0} max={macros.protein} color="orange" showLabel/>
+              <ProgressBar label={`Carbs - ${macros.carbs}g target`} value={0} max={macros.carbs} color="blue" showLabel/>
+              <ProgressBar label={`Fat - ${macros.fat}g target`} value={0} max={macros.fat} color="yellow" showLabel/>
+              <ProgressBar label={`Fiber - ${macros.fiber}g target`} value={0} max={macros.fiber} color="green" showLabel/>
             </div>
             <Link href="/nutrition" className="block text-center text-sm text-orange-400 hover:text-orange-300 font-medium mt-2">Log Today&apos;s Meals →</Link>
           </div>

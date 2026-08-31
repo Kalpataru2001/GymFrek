@@ -35,7 +35,7 @@ import {
   Clock,
   Layers,
   Repeat,
-  Save,
+  Lightbulb,
 } from 'lucide-react';
 
 export default function WorkoutPage() {
@@ -231,7 +231,7 @@ export default function WorkoutPage() {
           </h1>
           {plan && (
             <p className="text-gray-400 mt-1">
-              {plan.planType} Â· {plan.schedule.filter(d => !d.isRestDay).length} workout days / week
+              {plan.planType} - {plan.schedule.filter(d => !d.isRestDay).length} workout days / week
             </p>
           )}
         </div>
@@ -298,9 +298,9 @@ export default function WorkoutPage() {
               <div className="grid grid-cols-1 gap-2">
                 {(
                   [
-                    ['full_gym', 'ðŸ‹ï¸ Full Gym'],
-                    ['dumbbells_only', 'ðŸª™ Dumbbells Only'],
-                    ['no_equipment', 'ðŸ§˜ Bodyweight Only'],
+                    ['full_gym', 'Full Gym Equipment'],
+                    ['dumbbells_only', 'Dumbbells Only'],
+                    ['no_equipment', 'Bodyweight Only'],
                   ] as [Equipment, string][]
                 ).map(([v, l]) => (
                   <button
@@ -323,14 +323,15 @@ export default function WorkoutPage() {
             disabled={generating}
             className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
           >
-            {generating ? 'Generating Your Plan...' : 'âš¡ Generate My Workout Plan'}
+            {generating ? 'Generating Your Plan...' : 'Generate My Workout Plan'}
           </button>
         </div>
       ) : (
         <>
-          <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3">
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3 flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-orange-300">
-              ðŸ’¡ <strong>Weekly Progression:</strong> {plan.weeklyProgressionNote}
+              <strong>Weekly Progression:</strong> {plan.weeklyProgressionNote}
             </p>
           </div>
 
@@ -366,7 +367,7 @@ export default function WorkoutPage() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-white">
-                      {currentDayData.day} â€” {currentDayData.focus}
+                      {currentDayData.day} - {currentDayData.focus}
                     </h3>
                     <p className="text-xs text-gray-400">
                       {currentDayData.isRestDay
@@ -402,7 +403,9 @@ export default function WorkoutPage() {
               {/* Day Rest State or Exercise List */}
               {currentDayData.isRestDay ? (
                 <div className="bg-gray-800 rounded-xl border border-gray-700 p-10 text-center space-y-3">
-                  <div className="text-5xl mb-2">ðŸ˜´</div>
+                  <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto">
+                    <Moon className="w-6 h-6" />
+                  </div>
                   <h3 className="text-lg font-bold text-white">Active Recovery / Rest Day</h3>
                   <p className="text-xs text-gray-400 max-w-sm mx-auto">
                     Muscles repair and grow during rest days. Focus on hydration, high-protein nutrition, and mobility stretching.
@@ -452,11 +455,11 @@ export default function WorkoutPage() {
                             <div className="min-w-0">
                               <p className="font-bold text-white text-sm truncate">{ex.name}</p>
                               <p className="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
-                                <span className="font-medium text-gray-300">{ex.sets} sets Ã— {ex.reps}</span>
-                                <span>Â·</span>
+                                <span className="font-medium text-gray-300">{ex.sets} sets x {ex.reps}</span>
+                                <span>-</span>
                                 <span>Rest: {ex.rest}</span>
-                                <span>Â·</span>
-                                <span className="text-orange-400">{ex.muscleGroup}</span>
+                                <span>-</span>
+                                <span className="text-orange-400 font-medium">{ex.muscleGroup}</span>
                               </p>
                             </div>
                           </div>
@@ -508,7 +511,7 @@ export default function WorkoutPage() {
                             <p className="leading-relaxed whitespace-pre-line">{ex.instructions}</p>
                             {ex.tips && ex.tips.length > 0 && (
                               <div className="pt-1 text-emerald-400 flex items-start gap-1.5">
-                                <span>ðŸ’¡</span>
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0" />
                                 <span><strong>Pro Tip:</strong> {ex.tips[0]}</span>
                               </div>
                             )}
@@ -524,14 +527,14 @@ export default function WorkoutPage() {
         </>
       )}
 
-      {/* â”€â”€â”€ MODAL 1: WATCH VIDEO DEMONSTRATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* --- MODAL 1: WATCH VIDEO DEMONSTRATION ---------------------------- */}
       <ExerciseVisualModal
         exercise={selectedDemoExercise}
         isOpen={!!selectedDemoExercise}
         onClose={() => setSelectedDemoExercise(null)}
       />
 
-      {/* â”€â”€â”€ MODAL 2: ADD / EDIT EXERCISE WITH AUTO-VIDEO & YOUTUBE LINK â”€â”€â”€ */}
+      {/* --- MODAL 2: ADD / EDIT EXERCISE WITH AUTO-VIDEO & YOUTUBE LINK --- */}
       <EditExerciseModal
         isOpen={isAddingExercise || editingExerciseIndex !== null}
         onClose={() => {
@@ -552,7 +555,7 @@ export default function WorkoutPage() {
         dayName={currentDayData?.day || 'Today'}
       />
 
-      {/* â”€â”€â”€ MODAL 3: EDIT DAY DETAILS (FOCUS & REST TOGGLE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* --- MODAL 3: EDIT DAY DETAILS (FOCUS & REST TOGGLE) ---------------- */}
       <Modal
         isOpen={isEditingDay}
         onClose={() => setIsEditingDay(false)}

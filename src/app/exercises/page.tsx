@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useMemo } from 'react';
 import { generateWorkoutPlan, Exercise } from '@/lib/workout-engine';
 import Badge from '@/components/ui/Badge';
@@ -133,7 +133,7 @@ export default function ExercisesPage() {
 
             <div className="w-full flex items-center justify-between pt-3 border-t border-gray-700/60 text-xs">
               <span className="text-gray-400 font-medium">
-                {ex.sets} sets Ã— {ex.reps}
+                {ex.sets} sets x {ex.reps}
               </span>
               <span className="inline-flex items-center gap-1 font-semibold text-orange-400 group-hover:text-orange-300 transition-colors">
                 <Play className="w-3.5 h-3.5 fill-orange-500 text-orange-500" /> Watch Video
