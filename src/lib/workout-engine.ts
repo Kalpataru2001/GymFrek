@@ -1,4 +1,4 @@
-﻿/**
+/**
  * GymFrek â€” Workout Plan Engine
  * Generates structured weekly workout plans based on fitness level, goal, and equipment.
  */
@@ -608,4 +608,57 @@ export function generateWorkoutPlan(
     schedule,
     weeklyProgressionNote: 'Increase weight or add 1 rep each week while maintaining strict exercise form and controlled tempo.',
   };
+}
+
+/**
+ * Searches the exercise database to auto-match video demonstrations and form instructions for any exercise name.
+ */
+export function findExerciseVideo(name: string): Partial<Exercise> | null {
+  if (!name || !name.trim()) return null;
+  const q = name.toLowerCase().trim();
+
+  // Search through all exercises in EXERCISE_DB
+  for (const slotKey of Object.keys(EXERCISE_DB)) {
+    const slot = EXERCISE_DB[slotKey];
+    for (const eq of ['full_gym', 'dumbbells_only', 'no_equipment'] as Equipment[]) {
+      const exItem = slot[eq];
+      if (
+        exItem.name.toLowerCase() === q ||
+        exItem.name.toLowerCase().includes(q) ||
+        q.includes(exItem.name.toLowerCase())
+      ) {
+        return {
+          name: exItem.name,
+          videoUrl: exItem.videoUrl,
+          muscleGroup: exItem.muscleGroup,
+          instructions: exItem.instructions,
+          targetMuscles: exItem.targetMuscles,
+          equipment: exItem.equipment,
+          tips: exItem.tips,
+          commonMistakes: exItem.commonMistakes,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns all unique exercises in the system with their video URLs and metadata.
+ */
+export function getAllPreloadedExercises(): Exercise[] {
+  const seen = new Set<string>();
+  const results: Exercise[] = [];
+
+  for (const slotKey of Object.keys(EXERCISE_DB)) {
+    const slot = EXERCISE_DB[slotKey];
+    for (const eq of ['full_gym', 'dumbbells_only', 'no_equipment'] as Equipment[]) {
+      const exItem = slot[eq];
+      if (!seen.has(exItem.name)) {
+        seen.add(exItem.name);
+        results.push(exItem);
+      }
+    }
+  }
+  return results;
 }
