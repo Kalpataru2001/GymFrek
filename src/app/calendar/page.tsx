@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Flame,
   Moon,
+  XCircle,
   Plus,
   Trash2,
   CalendarDays,
@@ -31,6 +32,8 @@ import {
   Check,
   Utensils,
   Leaf,
+  Scale,
+  Edit3,
 } from 'lucide-react';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
@@ -49,11 +52,11 @@ export default function CalendarPage() {
   const [selectedMealType, setSelectedMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');
   const [foodSearchQuery, setFoodSearchQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState<FoodEntry>(POPULAR_FOODS_DATABASE[0]);
-  const [foodQuantity, setFoodQuantity] = useState<number>(2);
+  const [foodQuantity, setFoodQuantity] = useState<number>(50);
   const [selectedUnitIndex, setSelectedUnitIndex] = useState<number>(0);
   const [isManualOverride, setIsManualOverride] = useState(false);
 
-  // Manual fallback inputs
+  // Manual custom inputs
   const [manualName, setManualName] = useState('');
   const [manualCalories, setManualCalories] = useState(150);
   const [manualProtein, setManualProtein] = useState(10);
@@ -221,6 +224,18 @@ export default function CalendarPage() {
   const handleSelectFood = (food: FoodEntry) => {
     setSelectedFood(food);
     setSelectedUnitIndex(food.defaultUnitIndex);
+    // Set smart initial quantity based on portion type
+    if (food.portionType === 'weight') {
+      setFoodQuantity(food.quickPortions[1] || 50); // e.g. 50g for soya, 150g for rice
+    } else {
+      setFoodQuantity(food.quickPortions[1] || 2); // e.g. 2 for eggs/rotis
+    }
+    setFoodSearchQuery('');
+  };
+
+  const startCustomFood = (name: string) => {
+    setManualName(name);
+    setIsManualOverride(true);
     setFoodSearchQuery('');
   };
 
@@ -244,10 +259,14 @@ export default function CalendarPage() {
     } else {
       if (!calculatedNutrition) return;
       const unitText = selectedFood.servingUnits[selectedUnitIndex]?.label || '';
+      const displayTitle = selectedFood.portionType === 'weight'
+        ? `${calculatedNutrition.totalGrams}g ${selectedFood.name}`
+        : `${foodQuantity}x ${selectedFood.name} (${unitText})`;
+
       item = {
         id: `food_${Date.now()}`,
         mealType: selectedMealType,
-        name: `${foodQuantity}x ${selectedFood.name} (${unitText})`,
+        name: displayTitle,
         servingG: calculatedNutrition.totalGrams,
         calories: calculatedNutrition.calories,
         protein: calculatedNutrition.protein,
@@ -276,6 +295,7 @@ export default function CalendarPage() {
 
     await saveLogUpdate(updated);
     setShowAddFood(false);
+    setIsManualOverride(false);
     setToast({ message: `Added ${item.name} to ${item.mealType}!`, type: 'success' });
   };
 
@@ -312,7 +332,7 @@ export default function CalendarPage() {
             Attendance & Daily Growth Tracker
           </h1>
           <p className="text-gray-400 mt-1">
-            Log your everyday foods by quantity â€” calories, protein & ingredients are auto-calculated!
+            Log foods and workouts with instant smart ingredient & calorie auto-calculation
           </p>
         </div>
 
@@ -431,18 +451,18 @@ export default function CalendarPage() {
                     </span>
 
                     {hasCompleted && (
-                      <span className="flex items-center text-xs font-semibold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded">
-                        ðŸ”¥ Done
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded">
+                        <Flame className="w-3 h-3" /> Done
                       </span>
                     )}
                     {isRest && (
-                      <span className="flex items-center text-xs font-semibold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">
-                        ðŸ˜´ Rest
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 bg-blue-500/20 px-1.5 py-0.5 rounded">
+                        <Moon className="w-3 h-3" /> Rest
                       </span>
                     )}
                     {isMissed && (
-                      <span className="flex items-center text-xs font-semibold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded">
-                        âŒ Missed
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded">
+                        <XCircle className="w-3 h-3" /> Missed
                       </span>
                     )}
                   </div>
@@ -478,7 +498,7 @@ export default function CalendarPage() {
       {/* Day Inspector & Log Modal */}
       <Modal
         isOpen={!!selectedDate}
-        onClose={() => { setSelectedDate(null); setShowAddFood(false); }}
+        onClose={() => { setSelectedDate(null); setShowAddFood(false); setIsManualOverride(false); }}
         title={selectedDate ? `Daily Log â€” ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}` : ''}
         size="lg"
       >
@@ -491,23 +511,27 @@ export default function CalendarPage() {
             </h3>
             <div className="grid grid-cols-3 gap-2.5">
               {[
-                { val: 'completed', label: 'ðŸ”¥ Workout Done', activeCls: 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' },
-                { val: 'rest', label: 'ðŸ˜´ Rest Day', activeCls: 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' },
-                { val: 'missed', label: 'âŒ Missed', activeCls: 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20' },
-              ].map(opt => (
-                <button
-                  key={opt.val}
-                  type="button"
-                  onClick={() => setAttendance(opt.val as WorkoutAttendance)}
-                  className={`py-2.5 px-3 rounded-lg text-xs font-semibold border transition-all ${
-                    activeLog.attendance === opt.val
-                      ? opt.activeCls
-                      : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+                { val: 'completed', label: 'Workout Done', Icon: Flame, activeCls: 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' },
+                { val: 'rest', label: 'Rest Day', Icon: Moon, activeCls: 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' },
+                { val: 'missed', label: 'Missed', Icon: XCircle, activeCls: 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20' },
+              ].map(opt => {
+                const IconComponent = opt.Icon;
+                return (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setAttendance(opt.val as WorkoutAttendance)}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
+                      activeLog.attendance === opt.val
+                        ? opt.activeCls
+                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -544,7 +568,7 @@ export default function CalendarPage() {
               </h3>
               <button
                 type="button"
-                onClick={() => setShowAddFood(s => !s)}
+                onClick={() => { setShowAddFood(s => !s); setIsManualOverride(false); }}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -562,9 +586,10 @@ export default function CalendarPage() {
                   <button
                     type="button"
                     onClick={() => setIsManualOverride(s => !s)}
-                    className="text-[11px] text-gray-400 hover:text-orange-300 underline"
+                    className="text-[11px] text-gray-400 hover:text-orange-300 underline flex items-center gap-1"
                   >
-                    {isManualOverride ? 'Switch to Auto-Calculate' : 'Switch to Manual Entry'}
+                    <Edit3 className="w-3 h-3" />
+                    {isManualOverride ? 'Switch to Smart Search' : 'Manual Entry'}
                   </button>
                 </div>
 
@@ -579,7 +604,7 @@ export default function CalendarPage() {
                         onClick={() => setSelectedMealType(m)}
                         className={`py-1.5 rounded-lg text-xs font-medium capitalize border transition-all ${
                           selectedMealType === m
-                            ? 'bg-orange-500 border-orange-500 text-white'
+                            ? 'bg-orange-500 border-orange-500 text-white font-semibold'
                             : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
                         }`}
                       >
@@ -594,13 +619,13 @@ export default function CalendarPage() {
                     {/* Food Search Box */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-medium text-gray-300">
-                        Type or Choose Food (e.g. Roti, Egg, Rice, Chicken, Banana)
+                        Type Food Name (e.g. Soya Chunks, Roti, Egg, Rice, Chicken, Paneer, Oats, Banana)
                       </label>
                       <div className="relative">
                         <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                         <input
                           type="text"
-                          placeholder="Search food (e.g. maida roti, paneer, oats, egg)..."
+                          placeholder="Search food (e.g. soyab, roti, paneer, egg, rice)..."
                           value={foodSearchQuery}
                           onChange={e => setFoodSearchQuery(e.target.value)}
                           className="w-full pl-9 pr-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg text-xs focus:outline-none focus:border-orange-500"
@@ -609,21 +634,33 @@ export default function CalendarPage() {
 
                       {/* Dropdown Suggestions */}
                       {foodSearchQuery.trim() !== '' && (
-                        <div className="max-h-40 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg p-1 space-y-1 shadow-lg">
+                        <div className="max-h-48 overflow-y-auto bg-gray-800 border border-gray-600 rounded-lg p-1.5 space-y-1 shadow-xl">
                           {filteredFoods.length > 0 ? (
                             filteredFoods.map(f => (
                               <button
                                 key={f.id}
                                 type="button"
                                 onClick={() => handleSelectFood(f)}
-                                className="w-full text-left px-3 py-1.5 rounded hover:bg-gray-700 text-xs text-white flex items-center justify-between"
+                                className="w-full text-left px-3 py-2 rounded-md hover:bg-gray-700 text-xs text-white flex items-center justify-between transition-colors"
                               >
-                                <span>{f.name}</span>
-                                <span className="text-[10px] text-orange-400 font-medium">{f.category}</span>
+                                <span className="font-medium">{f.name}</span>
+                                <span className="text-[10px] text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded">
+                                  {f.category}
+                                </span>
                               </button>
                             ))
                           ) : (
-                            <p className="text-xs text-gray-400 p-2 text-center">No matching food found. Try manual entry.</p>
+                            <div className="p-3 text-center space-y-2">
+                              <p className="text-xs text-gray-400">No exact match for &quot;{foodSearchQuery}&quot;</p>
+                              <button
+                                type="button"
+                                onClick={() => startCustomFood(foodSearchQuery)}
+                                className="inline-flex items-center gap-1 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                Add &quot;{foodSearchQuery}&quot; as Custom Food
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}
@@ -634,7 +671,7 @@ export default function CalendarPage() {
                       <span className="text-[11px] text-gray-400">Quick Picks:</span>
                       <div className="flex flex-wrap gap-1.5">
                         {[
-                          'roti_wheat', 'roti_maida', 'egg_boiled_whole',
+                          'soya_chunks', 'roti_wheat', 'roti_maida', 'egg_boiled_whole',
                           'rice_white_cooked', 'paneer_raw', 'chicken_breast_cooked',
                           'banana_fresh', 'dal_yellow_cooked', 'oats_cooked'
                         ].map(foodId => {
@@ -652,15 +689,15 @@ export default function CalendarPage() {
                                   : 'bg-gray-700/80 border-gray-600 text-gray-300 hover:border-gray-500'
                               }`}
                             >
-                              {food.name.split(' (')[0]}
+                              {food.name.split(' /')[0]}
                             </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Selected Food & Quantity Controls */}
-                    <div className="bg-gray-700/60 p-3.5 rounded-xl border border-gray-600 space-y-3">
+                    {/* Selected Food & Dynamic Quantity / Portion Controls */}
+                    <div className="bg-gray-700/60 p-4 rounded-xl border border-gray-600 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-white flex items-center gap-1.5">
                           <Check className="w-3.5 h-3.5 text-orange-400" />
@@ -671,17 +708,41 @@ export default function CalendarPage() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      {/* Quick Quantity Chips (e.g. 50g, 100g, or 1, 2, 3 pieces) */}
+                      <div>
+                        <span className="text-[11px] text-gray-300 block mb-1">
+                          {selectedFood.portionType === 'weight' ? 'Select Weight:' : 'Select Count / Pieces:'}
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedFood.quickPortions.map(qty => (
+                            <button
+                              key={qty}
+                              type="button"
+                              onClick={() => setFoodQuantity(qty)}
+                              className={`text-xs font-semibold px-3 py-1 rounded-lg border transition-all ${
+                                foodQuantity === qty
+                                  ? 'bg-orange-500 border-orange-500 text-white'
+                                  : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-500'
+                              }`}
+                            >
+                              {selectedFood.portionType === 'weight' ? `${qty}g` : `${qty} pc`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-1">
                         <div>
-                          <label className="block text-[11px] font-medium text-gray-300 mb-1">
-                            Quantity / Count
+                          <label className="block text-[11px] font-medium text-gray-300 mb-1 flex items-center gap-1">
+                            <Scale className="w-3 h-3 text-orange-400" />
+                            {selectedFood.portionType === 'weight' ? 'Exact Grams (g)' : 'Number of Pieces'}
                           </label>
                           <input
                             type="number"
-                            min={0.5}
-                            step={0.5}
+                            min={1}
+                            step={selectedFood.portionType === 'weight' ? 5 : 1}
                             value={foodQuantity}
-                            onChange={e => setFoodQuantity(Math.max(0.1, Number(e.target.value)))}
+                            onChange={e => setFoodQuantity(Math.max(1, Number(e.target.value)))}
                             className="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
                           />
                         </div>
@@ -704,11 +765,13 @@ export default function CalendarPage() {
 
                       {/* Live Auto-Calculated Nutrition & Ingredients Display */}
                       {calculatedNutrition && (
-                        <div className="bg-gray-800/90 rounded-lg p-3 border border-orange-500/30 space-y-2">
+                        <div className="bg-gray-800/90 rounded-lg p-3.5 border border-orange-500/30 space-y-2.5">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-300">Total Weight: <strong>{calculatedNutrition.totalGrams}g</strong></span>
-                            <span className="text-orange-400 font-extrabold text-sm">
-                              ðŸ”¥ {calculatedNutrition.calories} kcal
+                            <span className="text-gray-300">
+                              Total Serving: <strong className="text-white">{calculatedNutrition.totalGrams}g</strong>
+                            </span>
+                            <span className="text-orange-400 font-extrabold text-sm flex items-center gap-1">
+                              <Flame className="w-4 h-4" /> {calculatedNutrition.calories} kcal
                             </span>
                           </div>
 
@@ -731,9 +794,8 @@ export default function CalendarPage() {
                             </div>
                           </div>
 
-                          {/* Ingredients Breakdown */}
                           {calculatedNutrition.ingredients.length > 0 && (
-                            <div className="pt-1.5 border-t border-gray-700 text-[11px] text-gray-300 flex items-start gap-1.5">
+                            <div className="pt-2 border-t border-gray-700 text-[11px] text-gray-300 flex items-start gap-1.5">
                               <Leaf className="w-3.5 h-3.5 text-green-400 flex-shrink-0 mt-0.5" />
                               <span><strong>Ingredients:</strong> {calculatedNutrition.ingredients.join(', ')}</span>
                             </div>
@@ -743,53 +805,54 @@ export default function CalendarPage() {
                     </div>
                   </>
                 ) : (
-                  /* Manual Override Mode */
-                  <div className="space-y-3 bg-gray-750 p-3 rounded-lg border border-gray-600">
+                  /* Custom / Manual Food Entry */
+                  <div className="space-y-3 bg-gray-750 p-4 rounded-xl border border-orange-500/40">
+                    <h4 className="text-xs font-bold text-orange-400 uppercase tracking-wider">Custom Food Details</h4>
                     <div>
                       <label className="block text-xs font-medium text-gray-300 mb-1">Food Name</label>
                       <input
                         type="text"
-                        placeholder="e.g. Homemade Sabzi & Rice"
+                        placeholder="e.g. Homemade Chicken Roll, Veg Momos"
                         value={manualName}
                         onChange={e => setManualName(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs"
+                        className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
                       <div>
-                        <label className="text-gray-300">Calories (kcal)</label>
+                        <label className="text-gray-300 mb-0.5 block">Estimated Calories (kcal)</label>
                         <input
                           type="number"
                           value={manualCalories}
                           onChange={e => setManualCalories(Number(e.target.value))}
-                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5"
                         />
                       </div>
                       <div>
-                        <label className="text-gray-300">Protein (g)</label>
+                        <label className="text-gray-300 mb-0.5 block">Protein (g)</label>
                         <input
                           type="number"
                           value={manualProtein}
                           onChange={e => setManualProtein(Number(e.target.value))}
-                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5"
                         />
                       </div>
                       <div>
-                        <label className="text-gray-300">Carbs (g)</label>
+                        <label className="text-gray-300 mb-0.5 block">Carbs (g)</label>
                         <input
                           type="number"
                           value={manualCarbs}
                           onChange={e => setManualCarbs(Number(e.target.value))}
-                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5"
                         />
                       </div>
                       <div>
-                        <label className="text-gray-300">Fat (g)</label>
+                        <label className="text-gray-300 mb-0.5 block">Fat (g)</label>
                         <input
                           type="number"
                           value={manualFat}
                           onChange={e => setManualFat(Number(e.target.value))}
-                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                          className="w-full bg-gray-700 border border-gray-600 text-white rounded px-2.5 py-1.5"
                         />
                       </div>
                     </div>
@@ -802,7 +865,9 @@ export default function CalendarPage() {
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-orange-500/20"
                 >
                   <Plus className="w-4 h-4" />
-                  Add {foodQuantity}x {selectedFood?.name.split(' (')[0] || 'Food'} to {selectedMealType}
+                  {isManualOverride
+                    ? `Add "${manualName || 'Custom Food'}" to ${selectedMealType}`
+                    : `Add ${selectedFood.portionType === 'weight' ? `${foodQuantity}g` : `${foodQuantity}x`} ${selectedFood.name.split(' /')[0]} to ${selectedMealType}`}
                 </button>
               </div>
             )}
