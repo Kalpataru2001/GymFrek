@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { db } from '@/lib/firebase';
@@ -36,12 +36,19 @@ import {
   Scale,
   Edit3,
   Bot,
-  Send,
   Loader2,
 } from 'lucide-react';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
 type EntryMode = 'smart_search' | 'ai_assistant' | 'manual';
+
+// Local timezone safe date helper (YYYY-MM-DD)
+function formatToLocalDateString(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export default function CalendarPage() {
   const { user } = useAuth();
@@ -89,38 +96,64 @@ export default function CalendarPage() {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const jumpToday = () => setCurrentDate(new Date());
 
-  // Fetch monthly logs
-  const fetchMonthLogs = async () => {
+  // Storage key
+  const storageKey = user ? `gymfrek_logs_${user.uid}` : null;
+
+  // Fetch monthly logs with local cache fallback
+  const fetchMonthLogs = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    try {
-      const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-      const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-31`;
 
+    // 1. Instant load from local storage
+    if (storageKey) {
+      try {
+        const cached = localStorage.getItem(storageKey);
+        if (cached) {
+          setLogs(JSON.parse(cached));
+        }
+      } catch (err) {
+        console.warn('Could not read local cache:', err);
+      }
+    }
+
+    // 2. Fetch from Firestore without composite range requirement
+    try {
       const q = query(
         collection(db, 'dailyLogs'),
-        where('uid', '==', user.uid),
-        where('date', '>=', monthStart),
-        where('date', '<=', monthEnd)
+        where('uid', '==', user.uid)
       );
 
       const snap = await getDocs(q);
       const logMap: Record<string, DailyLog> = {};
       snap.forEach(d => {
         const data = d.data() as DailyLog;
-        logMap[data.date] = data;
+        if (data.date) {
+          logMap[data.date] = data;
+        }
       });
-      setLogs(logMap);
+
+      // Update state and save to local storage
+      setLogs(prev => {
+        const merged = { ...prev, ...logMap };
+        if (storageKey) {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(merged));
+          } catch (e) {
+            console.warn(e);
+          }
+        }
+        return merged;
+      });
     } catch (e) {
-      console.error('Failed to fetch calendar logs:', e);
+      console.error('Failed to fetch calendar logs from Firestore:', e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, storageKey]);
 
   useEffect(() => {
     fetchMonthLogs();
-  }, [user, year, month]);
+  }, [fetchMonthLogs]);
 
   // Target macros
   const targets = useMemo(() => ({
@@ -135,7 +168,7 @@ export default function CalendarPage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = new Date(year, month, 1).getDay();
   const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = useMemo(() => formatToLocalDateString(new Date()), []);
 
   const filteredFoods = useMemo(() => {
     return searchLocalFoods(foodSearchQuery);
@@ -151,7 +184,7 @@ export default function CalendarPage() {
     const entries = Object.values(logs);
     const completedWorkouts = entries.filter(l => l.attendance === 'completed').length;
     const restDays = entries.filter(l => l.attendance === 'rest').length;
-    const activeEntries = entries.filter(l => l.attendance !== 'none' || (l.foods && l.foods.length > 0));
+    const activeEntries = entries.filter(l => l.attendance === 'completed' || l.attendance === 'rest' || (l.foods && l.foods.length > 0));
     const avgScore = activeEntries.length > 0
       ? Math.round(activeEntries.reduce((acc, l) => acc + (l.growthScore || 0), 0) / activeEntries.length)
       : 0;
@@ -204,6 +237,7 @@ export default function CalendarPage() {
     );
   }, [activeLog, targets]);
 
+  // Save log update to State, Local Storage, and Firestore
   const saveLogUpdate = async (updated: DailyLog) => {
     if (!user || !updated.date) return;
     const breakdown = calculateDailyGrowthScore(
@@ -217,10 +251,24 @@ export default function CalendarPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    setLogs(prev => ({ ...prev, [updated.date]: docData }));
+    setLogs(prev => {
+      const nextMap = { ...prev, [updated.date]: docData };
+      if (storageKey) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(nextMap));
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+      return nextMap;
+    });
 
-    const docRef = doc(db, 'dailyLogs', `${user.uid}_${updated.date}`);
-    await setDoc(docRef, docData, { merge: true });
+    try {
+      const docRef = doc(db, 'dailyLogs', `${user.uid}_${updated.date}`);
+      await setDoc(docRef, docData, { merge: true });
+    } catch (e) {
+      console.error('Failed to sync dailyLog to Firestore:', e);
+    }
   };
 
   const setAttendance = async (att: WorkoutAttendance) => {
@@ -362,7 +410,7 @@ export default function CalendarPage() {
     setShowAddFood(false);
     setAiResult(null);
     setAiPrompt('');
-    setToast({ message: `Added items to ${selectedMealType}!`, type: 'success' });
+    setToast({ message: `Added to ${selectedMealType}!`, type: 'success' });
   };
 
   const handleRemoveFood = async (foodId: string) => {
@@ -404,7 +452,7 @@ export default function CalendarPage() {
             Attendance & Daily Growth Tracker
           </h1>
           <p className="text-gray-400 mt-1">
-            Log Indian & global foods with AI nutrition calculation and instant macro tracking
+            Track daily meals, calories, protein, and workout consistency with instant growth scoring
           </p>
         </div>
 
@@ -651,7 +699,7 @@ export default function CalendarPage() {
             {/* Smart Auto-Calculation Form Container */}
             {showAddFood && (
               <div className="bg-gray-750 p-4 rounded-xl border border-orange-500/50 space-y-4 shadow-lg">
-                {/* Mode Selector Tabs: Smart Search, AI Assistant, Manual Entry */}
+                {/* Mode Selector Tabs */}
                 <div className="flex items-center bg-gray-800 p-1 rounded-xl border border-gray-700">
                   <button
                     type="button"
@@ -714,7 +762,7 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {/* â”€â”€â”€ TAB 1: SMART SEARCH & INDIAN FOOD DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* â”€â”€â”€ TAB 1: SMART SEARCH & MASTER FOOD DB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 {entryMode === 'smart_search' && (
                   <>
                     <div className="space-y-1.5">
