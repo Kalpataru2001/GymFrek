@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect, useMemo } from 'react';
 import type { Exercise } from '@/lib/workout-engine';
 import { getAllPreloadedExercises, findExerciseVideo, normalizeGymQuery } from '@/lib/workout-engine';
@@ -125,8 +125,10 @@ export default function EditExerciseModal({
     if (matched) {
       if (matched.videoUrl) setVideoUrl(matched.videoUrl);
       if (matched.alternativeVideos) setAlternativeVideos(matched.alternativeVideos);
-      if (matched.muscleGroup && (muscleGroup === 'Chest' || !muscleGroup)) setMuscleGroup(matched.muscleGroup);
-      if (matched.instructions && !instructions) setInstructions(matched.instructions);
+      if (matched.muscleGroup) setMuscleGroup(matched.muscleGroup);
+      if (matched.instructions && (!instructions || instructions.startsWith('Perform '))) {
+        setInstructions(matched.instructions);
+      }
     }
   };
 
@@ -162,14 +164,14 @@ export default function EditExerciseModal({
       if (data.success && data.exercise) {
         const ex = data.exercise;
         const matched = findExerciseVideo(q, 0);
-        setName(ex.name);
-        setMuscleGroup(ex.muscleGroup);
+        setName(ex.name || q);
+        setMuscleGroup(ex.muscleGroup || matched?.muscleGroup || 'Core / Abs');
         setSets(ex.sets || 3);
         setReps(ex.reps || '10-12');
         setRest(ex.rest || '60s');
-        setInstructions(ex.instructions);
-        setVideoUrl(matched?.videoUrl || ex.videoUrl || 'bEv6CCg2BC8');
-        setAlternativeVideos(matched?.alternativeVideos || ex.alternativeVideos || ['bEv6CCg2BC8', 'MeIiIdhvXT4']);
+        setInstructions(ex.instructions || matched?.instructions || '');
+        setVideoUrl(matched?.videoUrl || ex.videoUrl || 'l4kQd9x9WKI');
+        setAlternativeVideos(matched?.alternativeVideos || ex.alternativeVideos || ['l4kQd9x9WKI', 'Pr1ieGZ5atk', 'hdng3Nm1x_E']);
         setDifficulty(ex.difficulty || 'beginner');
         setSearchQuery('');
         setPreviewVideo(true);

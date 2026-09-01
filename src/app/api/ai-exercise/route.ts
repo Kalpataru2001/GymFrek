@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { findExerciseVideo, normalizeGymQuery } from '@/lib/workout-engine';
 
 const GEMINI_ATTEMPTS = [
@@ -80,8 +80,8 @@ Return STRICT RAW JSON only (no markdown, no backticks) in this format:
             success: true,
             exercise: {
               ...parsed,
-              videoUrl: localMatch?.videoUrl || 'bEv6CCg2BC8',
-              alternativeVideos: localMatch?.alternativeVideos || ['bEv6CCg2BC8', 'MeIiIdhvXT4', 'aclHkVaku9U'],
+              videoUrl: localMatch?.videoUrl || 'l4kQd9x9WKI',
+              alternativeVideos: localMatch?.alternativeVideos || ['l4kQd9x9WKI', 'Pr1ieGZ5atk', 'hdng3Nm1x_E'],
             },
             source: 'gemini_ai',
           });
@@ -92,11 +92,13 @@ Return STRICT RAW JSON only (no markdown, no backticks) in this format:
     }
 
     // 3. Smart Fallback Generator
-    const fallbackCategory = q.includes('squat') || q.includes('leg') || q.includes('quad') ? 'Quads / Glutes'
+    const fallbackCategory = q.includes('leg raise') || q.includes('lying leg') || q.includes('hanging leg') || q.includes('ab') || q.includes('core') || q.includes('crunch') || q.includes('plank') ? 'Core / Abs'
+      : q.includes('calf') || q.includes('calves') ? 'Calves / Lower Legs'
+      : q.includes('squat') || q.includes('leg') || q.includes('quad') || q.includes('lunge') ? 'Quads / Glutes'
       : q.includes('cardio') || q.includes('treadmill') || q.includes('running') || q.includes('jump') ? 'Cardio & Conditioning'
       : q.includes('chest') ? 'Chest'
       : q.includes('back') || q.includes('row') || q.includes('lat') ? 'Back'
-      : q.includes('shoulder') || q.includes('press') ? 'Shoulders'
+      : q.includes('shoulder') || q.includes('press') || q.includes('lateral raise') ? 'Shoulders'
       : q.includes('arm') || q.includes('bicep') || q.includes('curl') ? 'Biceps'
       : q.includes('tricep') || q.includes('pushdown') ? 'Triceps'
       : q.includes('stretch') || q.includes('mobility') ? 'Mobility & Stretching'
@@ -116,8 +118,8 @@ Return STRICT RAW JSON only (no markdown, no backticks) in this format:
         targetMuscles: localMatch?.targetMuscles || [fallbackCategory],
         tips: localMatch?.tips || ['Control the eccentric lowering phase for 2 seconds.', 'Breathe out on exertion.'],
         commonMistakes: localMatch?.commonMistakes || ['Using momentum or rushing repetitions.'],
-        videoUrl: localMatch?.videoUrl || (q.includes('squat') ? 'MeIiIdhvXT4' : 'bEv6CCg2BC8'),
-        alternativeVideos: localMatch?.alternativeVideos || ['MeIiIdhvXT4', 'bEv6CCg2BC8', 'aclHkVaku9U'],
+        videoUrl: localMatch?.videoUrl || (q.includes('squat') ? 'MeIiIdhvXT4' : 'l4kQd9x9WKI'),
+        alternativeVideos: localMatch?.alternativeVideos || ['l4kQd9x9WKI', 'Pr1ieGZ5atk', 'hdng3Nm1x_E'],
       },
       source: 'smart_local_nlp',
     });

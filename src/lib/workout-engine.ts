@@ -47,6 +47,7 @@ export interface WorkoutPlan {
 export function normalizeGymQuery(input: string): string {
   if (!input) return '';
   let s = input.toLowerCase().trim();
+  s = s.replace(/\blaying\s+down\b|\blaying\b|\blie\s+down\b/g, 'lying');
   s = s.replace(/\bdumbell\b|\bdumbel\b|\bdumble\b/g, 'dumbbell');
   s = s.replace(/\bsquarts\b|\bsquart\b|\bsqauts\b|\bsquatt\b/g, 'squat');
   s = s.replace(/\bextention\b|\bextenshion\b/g, 'extension');
@@ -60,6 +61,16 @@ export function normalizeGymQuery(input: string): string {
   s = s.replace(/\binkline\b/g, 'incline');
   s = s.replace(/\bcario\b/g, 'cardio');
   s = s.replace(/\blunges\b|\blunge/g, 'lunge');
+  s = s.replace(/\braises\b/g, 'raise');
+  s = s.replace(/\bpresses\b/g, 'press');
+  s = s.replace(/\bcurls\b/g, 'curl');
+  s = s.replace(/\bsquats\b/g, 'squat');
+  s = s.replace(/\bpulldowns\b|\bpull\s+downs\b/g, 'pulldown');
+  s = s.replace(/\bpushups\b|\bpush\s+ups\b/g, 'pushup');
+  s = s.replace(/\bpullups\b|\bpull\s+ups\b/g, 'pullup');
+  s = s.replace(/\bdeadlifts\b/g, 'deadlift');
+  s = s.replace(/\bskull\s+crushers\b|\bskullcrushers\b|\bskullcrusher\b/g, 'skull crusher');
+  s = s.replace(/\btricep\s+pushdowns\b|\bpushdowns\b/g, 'tricep pushdown');
   return s;
 }
 
@@ -70,7 +81,9 @@ export const EXERCISE_ALTERNATIVE_VIDEOS: Record<string, string[]> = {
   legs_squat: ['bEv6CCg2BC8', 'ultWZbUMPL8', 'MeIiIdhvXT4', 'aclHkVaku9U'],
   legs_press: ['IZxyjW7MPJQ', 'CHPHn7v5s5Q', 's9_Jc4U2pG8', 'bEv6CCg2BC8'],
   legs_extension: ['m0Bg-w0j47Y', '8kXWb1tU81Y', 'IZxyjW7MPJQ', 'bEv6CCg2BC8'],
+  legs_hamstring_curl: ['8kXWb1tU81Y', 'm0Bg-w0j47Y', 'IZxyjW7MPJQ', 'bEv6CCg2BC8'],
   legs_lunge: ['L8fvypPrzzs', '7jA_RkgN3k0', 'wrwwXE_x-pQ', 'bEv6CCg2BC8'],
+  legs_calves: ['gwLzBJYoWlI', '-M4-G8p8fmc', 'YZy6eNq34lA', 'L8fvypPrzzs'],
 
   // Chest
   chest_machine: ['xUm0BiKGcwE', 'rT7DgCr-3pg', 'VmB1G1K7v94', 'Iwe6AmxVf7o'],
@@ -88,18 +101,23 @@ export const EXERCISE_ALTERNATIVE_VIDEOS: Record<string, string[]> = {
   // Shoulders
   shoulder_press: ['2yjwXTZQDDI', 'qEwKCR5JCog', 'B-aVuyhvLHU', 'q8m_iX46q_U'],
   shoulder_lateral: ['3VcKaXpzqRo', 'PzsMitRdI_8', 'kDqklX1ZESo', '140EXPBNXXU'],
+  shoulder_front: ['hRJ6EB5-5jY', 'q8m_iX46q_U', '2yjwXTZQDDI', '3VcKaXpzqRo'],
 
   // Arms
   arms_biceps: ['kwG2ipFRgfo', 'in7PaeYlhrM', 'zC3nLlEvin4', 'ykJmrZ5v0Oo'],
+  arms_hammer_curl: ['zC3nLlEvin4', 'kwG2ipFRgfo', 'in7PaeYlhrM', 'ykJmrZ5v0Oo'],
   arms_triceps: ['vB5OHsJ3EME', '2-LAMcpzODU', '_gsUokN_Abg', '0326dy_-CzM'],
+  arms_skull_crusher: ['_gsUokN_Abg', 'vB5OHsJ3EME', '2-LAMcpzODU', '0326dy_-CzM'],
 
   // Core & Abs
-  core_abs: ['hdng3Nm1x_E', 'ASdvN_XEl_c', 'wkD8rjkodUI', '1919eP5nB_E'],
+  core_leg_raises: ['l4kQd9x9WKI', 'Pr1ieGZ5atk', 'hdng3Nm1x_E', 'JB2oyawG9KI'],
+  core_plank: ['ASdvN_XEl_c', '1919eP5nB_E', 'hdng3Nm1x_E', 'wkD8rjkodUI'],
+  core_crunches: ['wkD8rjkodUI', '1919eP5nB_E', 'hdng3Nm1x_E', 'ASdvN_XEl_c'],
 
-  // Stretching & Mobility (Verified embeddable)
+  // Stretching & Mobility
   stretching: ['g_tea8ZNk5A', 'eOz1_8LXZHk', 'p_8pWj1bB9k', 'Kp02eomXkQ4'],
 
-  // Cardio & Conditioning (Verified embeddable)
+  // Cardio & Conditioning
   cardio_treadmill: ['3gK-mYmO6Qk', 'auBLPXO8Fww', 'u3zgHI8QnqE', 'nmwgirgXLYM'],
   cardio_jumprope: ['u3zgHI8QnqE', '3gK-mYmO6Qk', 'auBLPXO8Fww', 'nmwgirgXLYM'],
   cardio_burpees: ['auBLPXO8Fww', 'nmwgirgXLYM', 'iSSAk4XCsRA', 'u3zgHI8QnqE'],
@@ -838,78 +856,350 @@ export function findExerciseVideo(rawName: string, cycleIndex: number = 0): Part
     return vList[safeIdx];
   };
 
-  // 1. Direct Search in EXERCISE_DB
-  for (const slotKey of Object.keys(EXERCISE_DB)) {
-    const slot = EXERCISE_DB[slotKey];
-    for (const eq of ['full_gym', 'dumbbells_only', 'no_equipment'] as Equipment[]) {
-      const exItem = slot[eq];
-      const normExName = normalizeGymQuery(exItem.name);
-      if (
-        normExName === q ||
-        normExName.includes(q) ||
-        q.includes(normExName)
-      ) {
-        const alts = exItem.alternativeVideos && exItem.alternativeVideos.length > 0
-          ? exItem.alternativeVideos
-          : [exItem.videoUrl || 'bEv6CCg2BC8'];
-        return {
-          name: exItem.name,
-          videoUrl: pickVideo(alts),
-          alternativeVideos: alts,
-          muscleGroup: exItem.muscleGroup,
-          instructions: exItem.instructions,
-          targetMuscles: exItem.targetMuscles,
-          equipment: exItem.equipment,
-          tips: exItem.tips,
-          commonMistakes: exItem.commonMistakes,
-        };
-      }
-    }
-  }
-
-  // 2. Multi-word Tokenized Fuzzy Search
-  const tokens = q.split(/\s+/).filter(t => t.length > 2);
-  for (const slotKey of Object.keys(EXERCISE_DB)) {
-    const slot = EXERCISE_DB[slotKey];
-    for (const eq of ['full_gym', 'dumbbells_only', 'no_equipment'] as Equipment[]) {
-      const exItem = slot[eq];
-      const exLower = normalizeGymQuery(exItem.name);
-      const matchCount = tokens.filter(t => exLower.includes(t)).length;
-      if (matchCount >= 2 || (tokens.length === 1 && matchCount === 1)) {
-        const alts = exItem.alternativeVideos && exItem.alternativeVideos.length > 0
-          ? exItem.alternativeVideos
-          : [exItem.videoUrl || 'bEv6CCg2BC8'];
-        return {
-          name: exItem.name,
-          videoUrl: pickVideo(alts),
-          alternativeVideos: alts,
-          muscleGroup: exItem.muscleGroup,
-          instructions: exItem.instructions,
-          targetMuscles: exItem.targetMuscles,
-          equipment: exItem.equipment,
-          tips: exItem.tips,
-          commonMistakes: exItem.commonMistakes,
-        };
-      }
-    }
-  }
-
-  // 3. Dumbbell Squats specific match
-  if (q.includes('dumbbell') && q.includes('squat')) {
+  // 1. Core / Lower Abs - Leg Raises (High priority before shoulder raise!)
+  if (
+    q.includes('leg raise') ||
+    q.includes('lying leg') ||
+    q.includes('hanging leg') ||
+    q.includes('captain') ||
+    q.includes('knee raise') ||
+    (q.includes('leg') && q.includes('raise') && !q.includes('calf'))
+  ) {
     return {
-      name: 'Dumbbell Squats (Goblet / Double DB Squat)',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_dumbbell_squat),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_dumbbell_squat,
-      muscleGroup: 'Quads / Glutes',
-      instructions: 'Hold dumbbells at shoulders or goblet position at chest. Squat down between knees until thighs are parallel to floor. Drive up through heels.',
-      targetMuscles: ['Quadriceps', 'Gluteus Maximus', 'Core'],
-      equipment: 'Pair of Dumbbells',
-      tips: ['Keep chest tall and drive knees outward.'],
+      name: 'Lying & Hanging Leg Raises (Lower Abs)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.core_leg_raises),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.core_leg_raises,
+      muscleGroup: 'Core / Abs',
+      instructions: 'Lie flat on your back with hands stabilizing hips or grip overhead bar. Raise legs in a controlled arc until hips flex to 90 degrees, then lower without arching spine.',
+      targetMuscles: ['Rectus Abdominis (Lower Abs)', 'Hip Flexors', 'Obliques'],
+      equipment: 'Mat / Pull-up Bar / Bodyweight',
+      tips: ['Keep lower back pressed against floor/pad to prevent lumbar strain.'],
     };
   }
 
-  // 4. Cardio Specific Matches
-  if (q.includes('cardio') || q.includes('treadmill') || q.includes('running') || q.includes('walk') || q.includes('jog')) {
+  // 2. Calves - Calf Raises
+  if (q.includes('calf') || q.includes('calves') || q.includes('soleus') || q.includes('gastrocnemius')) {
+    return {
+      name: 'Calf Raises (Standing / Seated)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_calves),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_calves,
+      muscleGroup: 'Calves / Lower Legs',
+      instructions: 'Stand on edge of step with balls of feet. Lower heels for a deep calf stretch, then press explosively onto toes and pause for 1 second at peak contraction.',
+      targetMuscles: ['Gastrocnemius', 'Soleus', 'Achilles Tendon'],
+      equipment: 'Step / Dumbbells / Machine',
+      tips: ['Full range of motion with a 1-second pause at the top.'],
+    };
+  }
+
+  // 3. Shoulders - Lateral Raises (Side Delts)
+  if (
+    q.includes('lateral raise') ||
+    q.includes('side raise') ||
+    q.includes('side lateral') ||
+    (q.includes('lateral') && q.includes('raise'))
+  ) {
+    return {
+      name: 'Dumbbell Lateral Raises (Side Delts)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral,
+      muscleGroup: 'Shoulders',
+      instructions: 'Hold dumbbells at sides with slight elbow bend. Raise arms laterally in scapular plane until parallel to floor, leading with elbows without swinging.',
+      targetMuscles: ['Lateral Deltoids', 'Upper Trapezius'],
+      equipment: 'Pair of Dumbbells / Cable',
+      tips: ['Tilt hands slightly as if pouring water from a pitcher at peak.'],
+    };
+  }
+
+  // 4. Shoulders - Front Raises
+  if (q.includes('front raise') || q.includes('front deltoid')) {
+    return {
+      name: 'Front Dumbbell Raises (Front Delts)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.shoulder_front),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.shoulder_front,
+      muscleGroup: 'Shoulders',
+      instructions: 'Stand tall holding weights in front of thighs. Raise one or both arms forward to shoulder height with strict control.',
+      targetMuscles: ['Anterior Deltoids', 'Upper Chest'],
+      equipment: 'Dumbbells / Barbell / Plate',
+    };
+  }
+
+  // 5. Shoulders & Upper Back - Face Pull & Rear Delts
+  if (q.includes('face pull') || q.includes('facepull') || q.includes('rear delt') || q.includes('reverse fly')) {
+    return {
+      name: 'Face Pulls & Rear Delt Flyes',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.back_facepull),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.back_facepull,
+      muscleGroup: 'Shoulders & Upper Back',
+      instructions: 'Set cable rope at eye level. Pull rope attachment towards nose while externally rotating shoulders, pulling elbows back and apart.',
+      targetMuscles: ['Rear Deltoids', 'Rotator Cuff', 'Rhomboids'],
+      equipment: 'Cable Machine with Rope / Dumbbells',
+    };
+  }
+
+  // 6. Shoulders - Overhead Press / Military Press / Arnold Press
+  if (
+    q.includes('overhead press') ||
+    q.includes('military press') ||
+    q.includes('shoulder press') ||
+    q.includes('arnold press') ||
+    (q.includes('shoulder') && (q.includes('press') || q.includes('dumbbell')))
+  ) {
+    return {
+      name: 'Overhead Shoulder Press (Barbell / Dumbbell)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.shoulder_press),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.shoulder_press,
+      muscleGroup: 'Shoulders',
+      instructions: 'Brace core and press weight vertically overhead directly in line with ears. Lock out smoothly and lower to chin level.',
+      targetMuscles: ['Anterior Deltoids', 'Lateral Deltoids', 'Triceps', 'Upper Traps'],
+      equipment: 'Dumbbells / Barbell',
+    };
+  }
+
+  // 7. Legs - Romanian Deadlift (RDL) & Conventional Deadlift
+  if (q.includes('rdl') || q.includes('romanian') || q.includes('stiff leg') || q.includes('deadlift')) {
+    return {
+      name: 'Romanian Deadlift (RDL) & Deadlifts',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.back_deadlift),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.back_deadlift,
+      muscleGroup: 'Hamstrings / Glutes',
+      instructions: 'Hinge hips backward with soft knee bend, keeping spine strictly neutral. Lower weights down shins until deep hamstring stretch, then drive hips forward to lockout.',
+      targetMuscles: ['Hamstrings', 'Gluteus Maximus', 'Erector Spinae', 'Lats'],
+      equipment: 'Barbell / Dumbbells',
+    };
+  }
+
+  // 8. Legs - Lunges & Bulgarian Split Squats
+  if (q.includes('lunge') || q.includes('split squat') || q.includes('step up')) {
+    return {
+      name: 'Lunges & Bulgarian Split Squats',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_lunge),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_lunge,
+      muscleGroup: 'Quads / Glutes',
+      instructions: 'Step into a lunge stance or elevate rear foot on bench. Lower until front thigh is parallel to floor and rear knee hovers above ground, then drive through front heel.',
+      targetMuscles: ['Quadriceps', 'Glutes', 'Hamstrings', 'Adductors'],
+      equipment: 'Dumbbells / Bodyweight',
+    };
+  }
+
+  // 9. Legs - Extensions & Hamstring Curls
+  if (q.includes('extension') && (q.includes('leg') || q.includes('quad'))) {
+    return {
+      name: 'Leg Extension Machine',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_extension),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_extension,
+      muscleGroup: 'Quads',
+      instructions: 'Sit with knees aligned with machine pivot. Extend shins upward squeezing quads at lockout, then lower under 2-second control.',
+      targetMuscles: ['Quadriceps'],
+      equipment: 'Leg Extension Machine',
+    };
+  }
+
+  if (q.includes('hamstring curl') || q.includes('leg curl') || (q.includes('curl') && q.includes('leg'))) {
+    return {
+      name: 'Hamstring Leg Curl Machine',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_hamstring_curl),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_hamstring_curl,
+      muscleGroup: 'Hamstrings',
+      instructions: 'Lie prone or sit in machine. Curl heels back towards buttocks, holding peak contraction for 1 second.',
+      targetMuscles: ['Hamstrings', 'Calves'],
+      equipment: 'Leg Curl Machine',
+    };
+  }
+
+  // 10. Legs - Leg Press
+  if (q.includes('leg press')) {
+    return {
+      name: 'Leg Press Machine',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_press),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_press,
+      muscleGroup: 'Quads / Glutes',
+      instructions: 'Place feet shoulder-width on footplate. Lower platform to 90-degree knee angle, then press back up without locking knees.',
+      targetMuscles: ['Quadriceps', 'Glutes', 'Hamstrings'],
+      equipment: 'Leg Press Machine',
+    };
+  }
+
+  // 11. Legs - Squats
+  if (q.includes('squat')) {
+    if (q.includes('dumbbell') || q.includes('goblet')) {
+      return {
+        name: 'Dumbbell Squats (Goblet / Double DB Squat)',
+        videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_dumbbell_squat),
+        alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_dumbbell_squat,
+        muscleGroup: 'Quads / Glutes',
+        instructions: 'Hold dumbbells at shoulders or goblet position. Sit hips down between knees until thighs are parallel to ground, drive through heels to stand.',
+        targetMuscles: ['Quadriceps', 'Glutes', 'Core'],
+        equipment: 'Dumbbells',
+      };
+    }
+    return {
+      name: 'Squat (Barbell / Bodyweight)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_squat),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_squat,
+      muscleGroup: 'Quads / Glutes',
+      instructions: 'Rest bar across traps or stand tall. Lower hips below parallel keeping chest proud and knees tracking outward, drive up explosively.',
+      targetMuscles: ['Quadriceps', 'Gluteus Maximus', 'Core'],
+      equipment: 'Barbell & Rack / Bodyweight',
+    };
+  }
+
+  // 12. Chest - Incline Press
+  if (q.includes('incline') && (q.includes('press') || q.includes('bench') || q.includes('dumbbell'))) {
+    return {
+      name: 'Incline Bench Press (Upper Chest)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_incline),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_incline,
+      muscleGroup: 'Chest',
+      instructions: 'Set bench to 30 degrees incline. Lower dumbbells or bar to upper chest clavicle area, press back up over upper chest.',
+      targetMuscles: ['Clavicular Pectoralis (Upper Chest)', 'Anterior Deltoids', 'Triceps'],
+      equipment: 'Incline Bench & Dumbbells / Barbell',
+    };
+  }
+
+  // 13. Chest - Flyes & Dips
+  if (q.includes('fly') || q.includes('pec deck') || q.includes('cable crossover')) {
+    return {
+      name: 'Chest Fly (Dumbbell / Cable / Pec Deck)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_fly),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_fly,
+      muscleGroup: 'Chest',
+      instructions: 'Open arms wide in a hugging motion with slight elbow bend. Squeeze chest muscles together to bring handles/dumbbells back to center.',
+      targetMuscles: ['Pectoralis Major (Sternal & Clavicular)'],
+      equipment: 'Cables / Dumbbells / Pec Deck Machine',
+    };
+  }
+
+  if (q.includes('dip')) {
+    return {
+      name: 'Chest & Triceps Parallel Bar Dips',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_dips),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_dips,
+      muscleGroup: 'Chest & Triceps',
+      instructions: 'Grip parallel bars, lean torso slightly forward for chest emphasis. Lower until elbows reach 90 degrees, press back up.',
+      targetMuscles: ['Lower Pectorals', 'Triceps', 'Anterior Deltoids'],
+      equipment: 'Parallel Dip Bars',
+    };
+  }
+
+  // 14. Chest - Flat Bench Press & Pushups
+  if (q.includes('bench') || q.includes('chest press') || q.includes('pushup') || (q.includes('chest') && q.includes('press'))) {
+    return {
+      name: 'Flat Bench Press & Pushups',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_bench),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_bench,
+      muscleGroup: 'Chest',
+      instructions: 'Lie flat on bench, retract shoulder blades. Lower bar/dumbbells with elbows at 45-degree angle to mid-chest, press upward explosively.',
+      targetMuscles: ['Pectoralis Major', 'Triceps', 'Front Delts'],
+      equipment: 'Flat Bench & Barbell / Dumbbells',
+    };
+  }
+
+  // 15. Back - Lat Pulldown & Pull-ups
+  if (q.includes('pulldown') || q.includes('pullup') || q.includes('chinup') || q.includes('lat pull') || q.includes('pull up') || q.includes('chin up')) {
+    return {
+      name: 'Lat Pulldown & Pull-ups',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.back_pulldown),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.back_pulldown,
+      muscleGroup: 'Back',
+      instructions: 'Grip bar slightly wider than shoulder-width. Drive elbows straight down towards ribs, squeezing lats and bringing bar to upper chest.',
+      targetMuscles: ['Latissimus Dorsi', 'Biceps', 'Rhomboids'],
+      equipment: 'Lat Pulldown Cable Machine / Pull-up Bar',
+    };
+  }
+
+  // 16. Back - Rows
+  if (q.includes('row') || q.includes('t-bar') || (q.includes('back') && !q.includes('squat'))) {
+    return {
+      name: 'Bent-over Row & Seated Cable Row',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.back_row),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.back_row,
+      muscleGroup: 'Back',
+      instructions: 'Hinge at hips with flat back. Pull weight back towards lower abdomen, pinching shoulder blades together at peak contraction.',
+      targetMuscles: ['Latissimus Dorsi', 'Rhomboids', 'Trapezius', 'Biceps'],
+      equipment: 'Barbell / Dumbbells / Seated Cable Row',
+    };
+  }
+
+  // 17. Arms - Hammer Curls
+  if (q.includes('hammer')) {
+    return {
+      name: 'Hammer Curls (Forearms & Brachialis)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_hammer_curl),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_hammer_curl,
+      muscleGroup: 'Biceps & Forearms',
+      instructions: 'Hold dumbbells with neutral palms-facing-each-other grip. Curl weights upward keeping elbows pinned to sides.',
+      targetMuscles: ['Brachialis', 'Brachioradialis', 'Biceps Brachii'],
+      equipment: 'Pair of Dumbbells / Rope Cable',
+    };
+  }
+
+  // 18. Arms - Bicep Curls
+  if (q.includes('bicep') || q.includes('curl')) {
+    return {
+      name: 'Bicep Curls (Barbell / Dumbbell)',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps,
+      muscleGroup: 'Biceps',
+      instructions: 'Keep elbows locked at sides. Supinate palms upward and curl weight smoothly towards shoulders, squeeze peak contraction for 1 second.',
+      targetMuscles: ['Biceps Brachii (Short & Long Head)', 'Forearms'],
+      equipment: 'Dumbbells / Barbell / EZ Bar',
+    };
+  }
+
+  // 19. Arms - Skull Crushers & Overhead Triceps
+  if (q.includes('skull') || q.includes('french press') || (q.includes('tricep') && q.includes('overhead'))) {
+    return {
+      name: 'Skull Crushers & Overhead Triceps Extension',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_skull_crusher),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_skull_crusher,
+      muscleGroup: 'Triceps',
+      instructions: 'Lie on bench or stand tall. Lower weight by bending forearms backward towards forehead/crown, then extend arms upward locking out triceps.',
+      targetMuscles: ['Triceps Brachii (Long Head & Lateral Head)'],
+      equipment: 'EZ Bar / Dumbbell / Cable',
+    };
+  }
+
+  // 20. Arms - Triceps Pushdown
+  if (q.includes('tricep') || q.includes('pushdown')) {
+    return {
+      name: 'Triceps Cable Pushdown',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps,
+      muscleGroup: 'Triceps',
+      instructions: 'Keep upper arms glued to torso. Push bar or rope attachment downward until elbows lock out fully, spreading ends of rope at bottom.',
+      targetMuscles: ['Triceps Brachii (Lateral & Medial Heads)'],
+      equipment: 'Cable Machine with Bar or Rope',
+    };
+  }
+
+  // 21. Core & Abs - Planks
+  if (q.includes('plank')) {
+    return {
+      name: 'Plank & Core Stability',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.core_plank),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.core_plank,
+      muscleGroup: 'Core / Abs',
+      instructions: 'Rest on forearms and toes with body forming a straight rigid line from head to heels. Squeeze glutes and brace core tightly without sagging hips.',
+      targetMuscles: ['Transverse Abdominis', 'Rectus Abdominis', 'Glutes'],
+      equipment: 'Mat / Bodyweight',
+    };
+  }
+
+  // 22. Core & Abs - Crunches, Situps, Russian Twists
+  if (q.includes('crunch') || q.includes('situp') || q.includes('twist') || q.includes('ab') || q.includes('core')) {
+    return {
+      name: 'Ab Crunches & Core Rotation',
+      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.core_crunches),
+      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.core_crunches,
+      muscleGroup: 'Core / Abs',
+      instructions: 'Contract abdominal muscles to curl ribcage towards pelvis, exhaling fully at peak contraction.',
+      targetMuscles: ['Rectus Abdominis', 'Obliques'],
+      equipment: 'Mat / Bodyweight',
+    };
+  }
+
+  // 23. Cardio
+  if (q.includes('treadmill') || q.includes('running') || q.includes('jog') || q.includes('walk') || q.includes('cardio')) {
     return {
       name: 'Treadmill Incline Walk / Running',
       videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.cardio_treadmill),
@@ -917,7 +1207,7 @@ export function findExerciseVideo(rawName: string, cycleIndex: number = 0): Part
       muscleGroup: 'Cardio & Conditioning',
       instructions: 'Maintain steady pace at 8-12% incline or alternate jogging intervals for maximum fat burn.',
       targetMuscles: ['Cardiovascular System', 'Calves', 'Glutes'],
-      equipment: 'Treadmill / Running Track',
+      equipment: 'Treadmill / Track',
     };
   }
 
@@ -928,12 +1218,12 @@ export function findExerciseVideo(rawName: string, cycleIndex: number = 0): Part
       alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.cardio_jumprope,
       muscleGroup: 'Cardio & Calves',
       instructions: 'Bounce lightly on balls of feet with wrists turning rope smoothly.',
-      targetMuscles: ['Cardio Endurance', 'Calves', 'Footwork'],
+      targetMuscles: ['Cardio Endurance', 'Calves'],
       equipment: 'Jump Rope',
     };
   }
 
-  if (q.includes('burpee') || q.includes('hiit')) {
+  if (q.includes('burpee') || q.includes('hiit') || q.includes('jumping jack') || q.includes('mountain climber')) {
     return {
       name: 'Burpees & HIIT Conditioning',
       videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.cardio_burpees),
@@ -945,136 +1235,42 @@ export function findExerciseVideo(rawName: string, cycleIndex: number = 0): Part
     };
   }
 
-  if (q.includes('extension') || q.includes('leg curl') || (q.includes('machine') && q.includes('leg'))) {
-    return {
-      name: 'Leg Extension & Curl Machine',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_extension),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_extension,
-      muscleGroup: 'Quads & Hamstrings',
-      instructions: 'Contract quads to full knee extension or curl heels back towards buttocks under strict control.',
-      targetMuscles: ['Quadriceps', 'Hamstrings'],
-      equipment: 'Leg Machine',
-    };
-  }
-
-  if (q.includes('machine') && q.includes('chest')) {
-    return {
-      name: 'Machine Chest Press',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_machine),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_machine,
-      muscleGroup: 'Chest',
-      instructions: 'Sit with handles at mid-chest height. Press forward smoothly until arms are nearly extended, lower with a 2-second control.',
-      targetMuscles: ['Pectoralis Major', 'Anterior Deltoids', 'Triceps'],
-      equipment: 'Seated Chest Press Machine',
-    };
-  }
-
-  if (q.includes('leg press')) {
-    return {
-      name: 'Leg Press Machine',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_press),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_press,
-      muscleGroup: 'Quads / Glutes',
-      instructions: 'Place feet shoulder-width on footplate. Lower platform to 90 degrees knee bend, press back up without locking knees.',
-      targetMuscles: ['Quadriceps', 'Glutes', 'Hamstrings'],
-      equipment: 'Leg Press Machine',
-    };
-  }
-
-  if (q.includes('squat')) {
-    return {
-      name: 'Squat',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.legs_squat),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.legs_squat,
-      muscleGroup: 'Quads / Glutes',
-      instructions: 'Sit hips down and back with knees aligned over toes. Drive through midfoot to stand.',
-      targetMuscles: ['Quadriceps', 'Glutes'],
-      equipment: 'Barbell / Dumbbell / Bodyweight',
-    };
-  }
-
+  // 24. Stretching & Yoga
   if (q.includes('stretch') || q.includes('mobility') || q.includes('flexibility') || q.includes('yoga')) {
     return {
       name: 'Full Body Dynamic & Static Stretching',
       videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.stretching),
       alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.stretching,
       muscleGroup: 'Mobility & Stretching',
-      instructions: 'Head-to-toe stretching sequence: hold each stretch for 30 seconds while breathing deeply to release muscular tension.',
-      targetMuscles: ['Full Body Flexibility', 'Hamstrings', 'Hips', 'Shoulders', 'Spine'],
+      instructions: 'Hold each stretch for 30 seconds while breathing deeply to release muscular tension.',
+      targetMuscles: ['Full Body Flexibility', 'Hamstrings', 'Hips', 'Shoulders'],
       equipment: 'Mat / Bodyweight',
     };
   }
 
-  if (q.includes('bench') || q.includes('press') || q.includes('chest') || q.includes('pushup')) {
-    return {
-      name: 'Chest Press',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.chest_bench),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.chest_bench,
-      muscleGroup: 'Chest',
-      instructions: 'Lower weight with elbows at 45 degrees until chest stretch, then press back up explosively.',
-      targetMuscles: ['Pectoralis Major', 'Triceps', 'Front Delts'],
-      equipment: 'Bench & Barbell / Dumbbells',
-    };
-  }
-
-  if (q.includes('curl') || q.includes('bicep')) {
-    return {
-      name: 'Bicep Curl',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_biceps,
-      muscleGroup: 'Biceps',
-      instructions: 'Curl weight upward squeezing biceps at peak contraction. Lower with a 2-second eccentric phase.',
-      targetMuscles: ['Biceps Brachii', 'Forearms'],
-      equipment: 'Dumbbells / Barbell / Cable',
-    };
-  }
-
-  if (q.includes('tricep') || q.includes('pushdown') || q.includes('dip')) {
-    return {
-      name: 'Triceps Extension / Pushdown',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.arms_triceps,
-      muscleGroup: 'Triceps',
-      instructions: 'Extend forearms downward locking out elbows to contract all three triceps heads.',
-      targetMuscles: ['Triceps Brachii'],
-      equipment: 'Cable or Dumbbell',
-    };
-  }
-
-  if (q.includes('row') || q.includes('pull') || q.includes('lat') || q.includes('back')) {
-    return {
-      name: 'Back Row / Pulldown',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.back_row),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.back_row,
-      muscleGroup: 'Back',
-      instructions: 'Pull weight towards lower ribs driving elbows back and squeezing shoulder blades.',
-      targetMuscles: ['Lats', 'Rhomboids', 'Biceps'],
-      equipment: 'Barbell / Cable / Dumbbells',
-    };
-  }
-
-  if (q.includes('shoulder') || q.includes('delt') || q.includes('overhead') || q.includes('raise')) {
-    return {
-      name: 'Shoulder Press / Lateral Raise',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.shoulder_lateral,
-      muscleGroup: 'Shoulders',
-      instructions: 'Raise weight with controlled tempo to shoulder height without shrugging traps.',
-      targetMuscles: ['Deltoids'],
-      equipment: 'Dumbbells / Barbell',
-    };
-  }
-
-  if (q.includes('plank') || q.includes('ab') || q.includes('core') || q.includes('crunch')) {
-    return {
-      name: 'Plank & Core Exercise',
-      videoUrl: pickVideo(EXERCISE_ALTERNATIVE_VIDEOS.core_abs),
-      alternativeVideos: EXERCISE_ALTERNATIVE_VIDEOS.core_abs,
-      muscleGroup: 'Core / Abs',
-      instructions: 'Hold rigid plank posture bracing abdominal wall and glutes.',
-      targetMuscles: ['Rectus Abdominis', 'Transverse Abdominis'],
-      equipment: 'Bodyweight / Floor',
-    };
+  // 25. Fallback Search in EXERCISE_DB
+  for (const slotKey of Object.keys(EXERCISE_DB)) {
+    const slot = EXERCISE_DB[slotKey];
+    for (const eq of ['full_gym', 'dumbbells_only', 'no_equipment'] as Equipment[]) {
+      const exItem = slot[eq];
+      const normExName = normalizeGymQuery(exItem.name);
+      if (normExName.includes(q) || q.includes(normExName)) {
+        const alts = exItem.alternativeVideos && exItem.alternativeVideos.length > 0
+          ? exItem.alternativeVideos
+          : [exItem.videoUrl || 'bEv6CCg2BC8'];
+        return {
+          name: exItem.name,
+          videoUrl: pickVideo(alts),
+          alternativeVideos: alts,
+          muscleGroup: exItem.muscleGroup,
+          instructions: exItem.instructions,
+          targetMuscles: exItem.targetMuscles,
+          equipment: exItem.equipment,
+          tips: exItem.tips,
+          commonMistakes: exItem.commonMistakes,
+        };
+      }
+    }
   }
 
   return null;
