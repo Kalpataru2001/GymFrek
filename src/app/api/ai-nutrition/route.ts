@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { parseMealQueryLocally } from '@/lib/ai-nutrition-engine';
 
 export async function POST(req: NextRequest) {
@@ -12,22 +12,28 @@ export async function POST(req: NextRequest) {
 
     if (geminiKey) {
       try {
-        const prompt = `You are an expert sports nutritionist and food scientist specializing in Indian and global cuisine.
-Analyze this meal logged by a user: "${query}"
+        const prompt = `You are an expert sports nutritionist and food scientist specializing in Indian, South Asian, and global cuisine.
+A user has logged this meal: "${query}"
 
-Return a STRICT JSON object matching this structure (no markdown formatting, just raw JSON):
+IMPORTANT: The user may use phonetic spellings, Hindi, or Hinglish names. For example:
+- "Allu bhojia" or "alu bhujia" = Aloo Bhujia (fried potato sev snack, ~536 kcal/100g)
+- "Daal" = Dal (lentil curry), "Chawal" = Rice, "Roti" / "Chapati" = Indian flatbread
+- "Allu" / "alu" = Aloo (potato), "Panir" = Paneer, "Chole" / "Chhole" = Chickpea curry
+Identify the CORRECT food item, not a random other food.
+
+Return a STRICT JSON object (no markdown, just raw JSON):
 {
-  "summaryTitle": "Brief clean title of the meal with portions (e.g. 2x Butter Roti + 1 Bowl Paneer Tikka)",
+  "summaryTitle": "Brief clean title with portions (e.g. 1x Aloo Bhujia 30g)",
   "totalCalories": number,
   "totalProtein": number,
   "totalCarbs": number,
   "totalFat": number,
   "totalFiber": number,
   "totalGrams": number,
-  "ingredients": ["ingredient1", "ingredient2", ...],
+  "ingredients": ["ingredient1", "ingredient2"],
   "items": [
     {
-      "name": "Food item name with portion",
+      "name": "Correct food name with portion",
       "quantity": number,
       "unit": "string",
       "calories": number,

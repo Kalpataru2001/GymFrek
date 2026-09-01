@@ -1,10 +1,10 @@
 ﻿/**
- * GymFrek â€” AI Natural Language Nutrition Engine
+ * GymFrek - AI Natural Language Nutrition Engine
  * Parses natural food logs (English, Hindi, Hinglish) and calculates macros, calories, and ingredients.
  * Uses Gemini API if configured, with built-in heuristic NLP fallback.
  */
 
-import { POPULAR_FOODS_DATABASE, FoodEntry, searchLocalFoods } from './food-database';
+import { FoodEntry, searchLocalFoods } from './food-database';
 
 export interface ParsedFoodResult {
   summaryTitle: string;
@@ -25,6 +25,49 @@ export interface ParsedFoodResult {
     fat: number;
     fiber: number;
   }>;
+}
+
+/**
+ * Normalize phonetic / Hindi / Hinglish food names to canonical form
+ * so the database search finds the correct match.
+ */
+function normalizeFoodQuery(input: string): string {
+  let s = input.toLowerCase().trim();
+
+  // Aloo / Alu / Allu -> aloo
+  s = s.replace(/\ballu\b|\balu\b/g, 'aloo');
+
+  // Bhujia / Bhojia / Bujia
+  s = s.replace(/\bbhojia\b|\bbujia\b|\bbugia\b/g, 'bhujia');
+
+  // Paneer spellings
+  s = s.replace(/\bpaner\b|\bpanir\b|\bpanier\b/g, 'paneer');
+
+  // Dal spellings
+  s = s.replace(/\bdaal\b/g, 'dal');
+
+  // Roti spellings
+  s = s.replace(/\bchapati\b|\bchappati\b|\bchapatti\b/g, 'roti');
+
+  // Biryani
+  s = s.replace(/\bbiriani\b|\bbiryaani\b|\bbiriyani\b/g, 'biryani');
+
+  // Chole / Chana
+  s = s.replace(/\bchana masala\b|\bchhole\b|\bchhola\b/g, 'chole');
+
+  // Rice
+  s = s.replace(/\bchawal\b|\bchaaval\b/g, 'rice');
+
+  // Poha
+  s = s.replace(/\bpohe\b/g, 'poha');
+
+  // Idli
+  s = s.replace(/\bidly\b/g, 'idli');
+
+  // Samosa
+  s = s.replace(/\bsamose\b|\bsamossa\b/g, 'samosa');
+
+  return s;
 }
 
 /**
@@ -54,14 +97,15 @@ export function parseMealQueryLocally(query: string): ParsedFoodResult {
 
   const parsedItems: ParsedFoodResult['items'] = [];
   const collectedIngredients = new Set<string>();
+  const unmatchedItems: string[] = [];
 
   for (const seg of rawSegments) {
-    // Extract numbers (e.g. "2 rotis", "150g rice", "1.5 scoops whey", "half plate")
     let count = 1;
     let weightGrams: number | null = null;
 
     const gramMatch = seg.match(/(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/i);
-    const countMatch = seg.match(/^(\d+(?:\.\d+)?)\s+/i) || seg.match(/\b(\d+(?:\.\d+)?)\s+(?:piece|pieces|pc|pcs|roti|rotis|egg|eggs|cup|cups|plate|plates|bowl|bowls|katori|glass|glasses|scoop|scoops)\b/i);
+    const countMatch = seg.match(/^(\d+(?:\.\d+)?)\s+/i)
+      || seg.match(/\b(\d+(?:\.\d+)?)\s+(?:piece|pieces|pc|pcs|roti|rotis|egg|eggs|cup|cups|plate|plates|bowl|bowls|katori|glass|glasses|scoop|scoops)\b/i);
     const halfMatch = seg.match(/\b(?:half|1\/2)\b/i);
 
     if (gramMatch) {
@@ -72,7 +116,6 @@ export function parseMealQueryLocally(query: string): ParsedFoodResult {
       count = 0.5;
     }
 
-    // Clean segment to match food database
     const cleanName = seg
       .replace(/\d+(?:\.\d+)?\s*(?:g|gm|gms|gram|grams|ml|kg)\b/gi, '')
       .replace(/^\d+(?:\.\d+)?\s*/gi, '')
@@ -80,10 +123,22 @@ export function parseMealQueryLocally(query: string): ParsedFoodResult {
       .replace(/\b(?:cooked|raw|boiled|steamed|fried|roasted|homemade|fresh)\b/gi, '')
       .trim();
 
-    const matches = searchLocalFoods(cleanName);
-    const matchedFood: FoodEntry = matches[0] || POPULAR_FOODS_DATABASE[0];
+    const normalizedName = normalizeFoodQuery(cleanName);
 
-    // Calculate portions
+    let matches = searchLocalFoods(normalizedName);
+    if (matches.length === 0 && normalizedName !== cleanName) {
+      matches = searchLocalFoods(cleanName);
+    }
+
+    // IMPORTANT: If no match found, DO NOT default to index 0 (wrong food).
+    // Track as unmatched â€” let Gemini handle it via the API route.
+    if (matches.length === 0) {
+      unmatchedItems.push(cleanName || seg);
+      continue;
+    }
+
+    const matchedFood: FoodEntry = matches[0];
+
     let itemGrams = 100;
     let unitLabel = 'serving';
 
@@ -95,30 +150,23 @@ export function parseMealQueryLocally(query: string): ParsedFoodResult {
       itemGrams = count * unit.grams;
       unitLabel = `${count}x piece`;
     } else {
-      // Weight or volume food with count (e.g. 1 bowl or 2 plates)
       const unit = matchedFood.servingUnits.find(u => u.grams > 1) || matchedFood.servingUnits[0];
       itemGrams = count * (unit.grams > 1 ? unit.grams : 150);
       unitLabel = `${count}x ${unit.label.split(' (')[0]}`;
     }
 
     const factor = itemGrams / 100;
-    const itemCalories = Math.round(matchedFood.per100g.calories * factor);
-    const itemProtein = Math.round(matchedFood.per100g.protein * factor * 10) / 10;
-    const itemCarbs = Math.round(matchedFood.per100g.carbs * factor * 10) / 10;
-    const itemFat = Math.round(matchedFood.per100g.fat * factor * 10) / 10;
-    const itemFiber = Math.round(matchedFood.per100g.fiber * factor * 10) / 10;
-
     matchedFood.ingredients.forEach(ing => collectedIngredients.add(ing));
 
     parsedItems.push({
       name: `${unitLabel} ${matchedFood.name.split(' /')[0]}`,
       quantity: count,
       unit: unitLabel,
-      calories: itemCalories,
-      protein: itemProtein,
-      carbs: itemCarbs,
-      fat: itemFat,
-      fiber: itemFiber,
+      calories: Math.round(matchedFood.per100g.calories * factor),
+      protein: Math.round(matchedFood.per100g.protein * factor * 10) / 10,
+      carbs: Math.round(matchedFood.per100g.carbs * factor * 10) / 10,
+      fat: Math.round(matchedFood.per100g.fat * factor * 10) / 10,
+      fiber: Math.round(matchedFood.per100g.fiber * factor * 10) / 10,
     });
   }
 
@@ -128,6 +176,23 @@ export function parseMealQueryLocally(query: string): ParsedFoodResult {
   const totalFat = Math.round(parsedItems.reduce((acc, i) => acc + i.fat, 0) * 10) / 10;
   const totalFiber = Math.round(parsedItems.reduce((acc, i) => acc + i.fiber, 0) * 10) / 10;
   const totalGrams = parsedItems.length * 150;
+
+  // If nothing matched locally, return a clear message (Gemini will handle it via API route)
+  if (parsedItems.length === 0) {
+    return {
+      summaryTitle: unmatchedItems.length > 0
+        ? `"${unmatchedItems.join(', ')}" not found locally - Gemini AI will calculate`
+        : 'No food items recognized',
+      totalCalories: 0,
+      totalProtein: 0,
+      totalCarbs: 0,
+      totalFat: 0,
+      totalFiber: 0,
+      totalGrams: 0,
+      ingredients: [],
+      items: [],
+    };
+  }
 
   return {
     summaryTitle: parsedItems.map(p => p.name).join(' + ') || query,

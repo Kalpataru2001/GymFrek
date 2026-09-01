@@ -1,5 +1,5 @@
-﻿/**
- * GymFrek â€” Master Indian & Global Food Database
+/**
+ * GymFrek - Master Indian & Global Food Database
  * Covers North, South, East, West Indian cuisines, street food, curries, sabzis, dals, meats, sweets, snacks, and fitness staples.
  */
 
@@ -30,7 +30,7 @@ export interface FoodEntry {
 }
 
 export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
-  // â”€â”€â”€ Indian Sabzis & Veggies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Indian Sabzis & Veggies ------------------------------------------------
   {
     id: 'bhindi_masala',
     name: 'Bhindi Masala / Okra / Ladies Finger',
@@ -93,6 +93,27 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     quickPortions: [100, 150, 200],
     ingredients: ['Boiled Diced Potatoes', 'Roasted Cumin (Jeera)', 'Turmeric', 'Green Chilli', 'Ghee/Oil'],
     per100g: { calories: 120, protein: 2.0, carbs: 21.0, fat: 3.5, fiber: 2.2 },
+  },
+  {
+    id: 'aloo_bhujia',
+    name: 'Aloo Bhujia (Potato Sev Snack)',
+    aliases: [
+      'aloo bhujia', 'alu bhujia', 'allu bhujia', 'allu bhojia', 'alu bhojia',
+      'bhujia', 'aloo sev', 'potato bhujia', 'bikaneri bhujia', 'haldirams bhujia',
+      'bhojia', 'bujia', 'fried snack', 'namkeen', 'aloo namkeen',
+    ],
+    category: 'Breakfast & Snacks',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: 'Small Handful (30g)', grams: 30 },
+      { label: 'Medium Bowl (60g)', grams: 60 },
+      { label: 'Large Pack (100g)', grams: 100 },
+    ],
+    defaultUnitIndex: 0,
+    quickPortions: [30, 50, 60, 100],
+    ingredients: ['Potato Flour (Besan)', 'Gram Flour', 'Salt', 'Red Chilli', 'Spices', 'Oil (Deep Fried)'],
+    per100g: { calories: 536, protein: 7.5, carbs: 56.0, fat: 32.5, fiber: 3.2 },
   },
   {
     id: 'baingan_bharta',
@@ -217,7 +238,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 60, protein: 1.8, carbs: 8.0, fat: 2.5, fiber: 2.8 },
   },
 
-  // â”€â”€â”€ Dals & Legumes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Dals & Legumes ---------------------------------------------------------
   {
     id: 'dal_yellow_cooked',
     name: 'Cooked Yellow Dal (Moong / Toor / Arhar Tadka)',
@@ -344,7 +365,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 35, protein: 1.0, carbs: 6.0, fat: 0.8, fiber: 1.0 },
   },
 
-  // â”€â”€â”€ Grains, Roti & Rice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Grains, Roti & Rice ---------------------------------------------------
   {
     id: 'roti_wheat',
     name: 'Wheat Roti / Chapati / Phulka',
@@ -524,7 +545,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 120, protein: 4.5, carbs: 22.0, fat: 2.0, fiber: 2.5 },
   },
 
-  // â”€â”€â”€ Protein & Meat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Protein & Meat ----------------------------------------------------------
   {
     id: 'soya_chunks',
     name: 'Soya Chunks / Soyabean / Nutrela',
@@ -683,7 +704,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 220, protein: 17.5, carbs: 3.5, fat: 15.0, fiber: 0.8 },
   },
 
-  // â”€â”€â”€ Dairy & Vegetarian â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Dairy & Vegetarian -----------------------------------------------------
   {
     id: 'paneer_raw',
     name: 'Paneer (Raw / Cottage Cheese)',
@@ -793,7 +814,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 58, protein: 3.2, carbs: 4.8, fat: 3.0, fiber: 0 },
   },
 
-  // â”€â”€â”€ Breakfast & Snacks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Breakfast & Snacks -----------------------------------------------------
   {
     id: 'oats_cooked',
     name: 'Rolled Oats (Raw / Cooked)',
@@ -889,7 +910,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 180, protein: 9.5, carbs: 24.0, fat: 5.5, fiber: 5.0 },
   },
 
-  // â”€â”€â”€ Indian Street Food & Sweets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Indian Street Food & Sweets --------------------------------------------
   {
     id: 'pav_bhaji',
     name: 'Pav Bhaji (Spiced Veg Mash with Buttered Pav)',
@@ -985,7 +1006,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 145, protein: 3.5, carbs: 24.0, fat: 4.0, fiber: 0.5 },
   },
 
-  // â”€â”€â”€ Fruits & Nuts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Fruits & Nuts ----------------------------------------------------------
   {
     id: 'banana_fresh',
     name: 'Fresh Banana (Kela)',
@@ -1068,7 +1089,7 @@ export const POPULAR_FOODS_DATABASE: FoodEntry[] = [
     per100g: { calories: 588, protein: 25.0, carbs: 20.0, fat: 50.0, fiber: 8.0 },
   },
 
-  // â”€â”€â”€ Fitness Supplements & Beverages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Fitness Supplements & Beverages ----------------------------------------
   {
     id: 'whey_protein_isolate',
     name: 'Whey Protein Powder',

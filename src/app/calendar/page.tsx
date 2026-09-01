@@ -652,7 +652,7 @@ export default function CalendarPage() {
                 <span className="text-xs font-bold text-emerald-300">Champion Day</span>
               </div>
               <p className="text-[10px] text-gray-300 leading-tight">
-                Workout finished + hit protein &amp; calorie goals (Score &ge; 75%).
+                Workout done + protein & calorie goals met (Score &ge; 75%).
               </p>
             </div>
 
