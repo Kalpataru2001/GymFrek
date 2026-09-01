@@ -1,5 +1,17 @@
 ﻿import { NextResponse } from 'next/server';
 
+// Try calling Gemini with a given model and API version
+async function tryGemini(key: string, apiVersion: string, model: string) {
+  const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${key}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: 'Say: hello' }] }] }),
+  });
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data, model, apiVersion };
+}
+
 export async function GET() {
   const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
@@ -11,50 +23,52 @@ export async function GET() {
     });
   }
 
-  // Mask the key for safe display (show only first 8 chars)
   const maskedKey = geminiKey.slice(0, 8) + '...' + geminiKey.slice(-4);
 
-  // Make a real test call to Gemini
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Say: hello' }] }],
-        }),
+  // Try multiple models + versions in order
+  const attempts = [
+    { apiVersion: 'v1', model: 'gemini-1.5-flash' },
+    { apiVersion: 'v1', model: 'gemini-pro' },
+    { apiVersion: 'v1beta', model: 'gemini-1.5-flash' },
+    { apiVersion: 'v1beta', model: 'gemini-pro' },
+  ];
+
+  const results = [];
+
+  for (const attempt of attempts) {
+    try {
+      const result = await tryGemini(geminiKey, attempt.apiVersion, attempt.model);
+      results.push({
+        model: attempt.model,
+        apiVersion: attempt.apiVersion,
+        httpStatus: result.status,
+        ok: result.ok,
+        error: result.ok ? null : result.data?.error?.message,
+      });
+
+      if (result.ok) {
+        const reply = result.data?.candidates?.[0]?.content?.parts?.[0]?.text || '(no text)';
+        return NextResponse.json({
+          status: 'working',
+          message: `Gemini is working! Best model: ${attempt.model} (${attempt.apiVersion})`,
+          keyPreview: maskedKey,
+          workingModel: attempt.model,
+          workingApiVersion: attempt.apiVersion,
+          geminiReply: reply,
+          allAttempts: results,
+        });
       }
-    );
-
-    const data = await res.json();
-
-    if (res.ok) {
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '(no text)';
-      return NextResponse.json({
-        status: 'working',
-        message: 'Gemini API key is valid and working!',
-        keyPreview: maskedKey,
-        geminiReply: reply,
-        httpStatus: res.status,
-      });
-    } else {
-      return NextResponse.json({
-        status: 'invalid_key',
-        message: 'Gemini API key is set but rejected by Google.',
-        keyPreview: maskedKey,
-        httpStatus: res.status,
-        geminiError: data?.error?.message || JSON.stringify(data),
-        hint: 'Check: Is the key correct? Is Generative Language API enabled in your Google Cloud project?',
-      });
+    } catch (e) {
+      results.push({ model: attempt.model, apiVersion: attempt.apiVersion, error: String(e) });
     }
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({
-      status: 'network_error',
-      message: 'Key is set but could not reach Gemini API.',
-      keyPreview: maskedKey,
-      error: msg,
-    });
   }
+
+  // None worked
+  return NextResponse.json({
+    status: 'all_failed',
+    message: 'Gemini key is set but no model worked. Check if Generative Language API is enabled.',
+    keyPreview: maskedKey,
+    allAttempts: results,
+    hint: 'Go to console.cloud.google.com -> APIs -> Enable "Generative Language API"',
+  });
 }
