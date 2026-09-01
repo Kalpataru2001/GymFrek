@@ -208,6 +208,20 @@ export default function WorkoutPage() {
     setToast({ message: 'Exercise removed from routine', type: 'info' });
   };
 
+  const allDays = useMemo(() => plan?.schedule ?? [], [plan]);
+  const currentDayData: WorkoutDay | undefined = allDays[activeDay];
+
+  const baseMacros = useMemo(
+    () => profile?.macros || { calories: 2000, protein: 140, carbs: 200, fat: 60, fiber: 30 },
+    [profile]
+  );
+
+  const currentDayNutrients = useMemo(() => {
+    return currentDayData
+      ? calculateDayWorkoutNutrients(currentDayData, baseMacros, profile?.weightKg)
+      : null;
+  }, [currentDayData, baseMacros, profile?.weightKg]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -215,17 +229,6 @@ export default function WorkoutPage() {
       </div>
     );
   }
-
-  const allDays = plan?.schedule ?? [];
-  const currentDayData: WorkoutDay | undefined = allDays[activeDay];
-
-  const baseMacros = useMemo(() => profile?.macros || { calories: 2000, protein: 140, carbs: 200, fat: 60, fiber: 30 }, [profile]);
-
-  const currentDayNutrients = useMemo(() => {
-    return currentDayData
-      ? calculateDayWorkoutNutrients(currentDayData, baseMacros, profile?.weightKg)
-      : null;
-  }, [currentDayData, baseMacros, profile?.weightKg]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
