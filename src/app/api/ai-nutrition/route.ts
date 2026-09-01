@@ -1,16 +1,20 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { parseMealQueryLocally } from '@/lib/ai-nutrition-engine';
 
-// Models to try in order (most capable first)
-const GEMINI_MODELS = [
+// Try all modern Gemini models in order until one works
+const GEMINI_ATTEMPTS = [
+  { apiVersion: 'v1beta', model: 'gemini-2.0-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-2.0-flash-lite' },
+  { apiVersion: 'v1beta', model: 'gemini-1.5-flash-latest' },
+  { apiVersion: 'v1beta', model: 'gemini-1.5-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-1.5-pro' },
+  { apiVersion: 'v1beta', model: 'gemini-pro' },
   { apiVersion: 'v1', model: 'gemini-1.5-flash' },
   { apiVersion: 'v1', model: 'gemini-pro' },
-  { apiVersion: 'v1beta', model: 'gemini-1.5-flash' },
-  { apiVersion: 'v1beta', model: 'gemini-pro' },
 ];
 
-async function callGemini(key: string, prompt: string): Promise<{ text: string; model: string } | null> {
-  for (const { apiVersion, model } of GEMINI_MODELS) {
+async function callGeminiWithFallback(key: string, prompt: string): Promise<{ text: string; model: string } | null> {
+  for (const { apiVersion, model } of GEMINI_ATTEMPTS) {
     try {
       const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${key}`;
       const res = await fetch(url, {
@@ -25,10 +29,10 @@ async function callGemini(key: string, prompt: string): Promise<{ text: string; 
       if (res.ok) {
         const data = await res.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return { text, model: `${model} (${apiVersion})` };
+        if (text) return { text, model: `${model}/${apiVersion}` };
       }
     } catch {
-      // Try next model
+      continue;
     }
   }
   return null;
@@ -44,18 +48,18 @@ export async function POST(req: NextRequest) {
     const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     if (geminiKey) {
-      const prompt = `You are an expert sports nutritionist and food scientist specializing in Indian, South Asian, and global cuisine.
-A user has logged this meal: "${query}"
+      const prompt = `You are an expert sports nutritionist specializing in Indian, South Asian, and global cuisine.
+A user logged this meal: "${query}"
 
-IMPORTANT: The user may use phonetic spellings, Hindi, or Hinglish names. For example:
-- "Allu bhojia" or "alu bhujia" = Aloo Bhujia (fried potato sev snack, ~536 kcal/100g)
-- "Daal" = Dal (lentil curry), "Chawal" = Rice, "Roti" / "Chapati" = Indian flatbread
-- "Allu" / "alu" = Aloo (potato), "Panir" = Paneer, "Chole" / "Chhole" = Chickpea curry
-Identify the CORRECT food item, not a random other food.
+IMPORTANT - Handle phonetic/Hindi/Hinglish names:
+- "Allu bhojia" / "alu bhujia" = Aloo Bhujia (fried potato sev snack, ~536 kcal/100g)
+- "Daal" = Dal, "Chawal" = Rice, "Chapati" = Roti
+- "Allu"/"alu" = Aloo (potato), "Panir" = Paneer
+- "Chole"/"Chhole" = Chickpea curry
 
-Return a STRICT JSON object (no markdown, just raw JSON):
+Return STRICT JSON only (no markdown):
 {
-  "summaryTitle": "Brief clean title with portions",
+  "summaryTitle": "Food name with portion",
   "totalCalories": number,
   "totalProtein": number,
   "totalCarbs": number,
@@ -63,32 +67,29 @@ Return a STRICT JSON object (no markdown, just raw JSON):
   "totalFiber": number,
   "totalGrams": number,
   "ingredients": ["ingredient1", "ingredient2"],
-  "items": [
-    {
-      "name": "Correct food name with portion",
-      "quantity": number,
-      "unit": "string",
-      "calories": number,
-      "protein": number,
-      "carbs": number,
-      "fat": number,
-      "fiber": number
-    }
-  ]
+  "items": [{
+    "name": "Correct food name with portion",
+    "quantity": number,
+    "unit": "string",
+    "calories": number,
+    "protein": number,
+    "carbs": number,
+    "fat": number,
+    "fiber": number
+  }]
 }`;
 
-      const result = await callGemini(geminiKey, prompt);
+      const result = await callGeminiWithFallback(geminiKey, prompt);
       if (result) {
         try {
           const parsed = JSON.parse(result.text);
           return NextResponse.json({ success: true, ...parsed, source: 'ai_gemini', modelUsed: result.model });
         } catch {
-          // JSON parse failed, fall through
+          // JSON parse failed, fall through to local
         }
       }
     }
 
-    // Smart Local NLP Parser Fallback
     const localResult = parseMealQueryLocally(query);
     return NextResponse.json({
       success: true,
