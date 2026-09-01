@@ -573,12 +573,18 @@ export function calculateDayWorkoutNutrients(
     if (
       text.includes('cardio') ||
       text.includes('treadmill') ||
+      text.includes('tiredmill') ||
       text.includes('running') ||
+      text.includes('cycling') ||
+      text.includes('bike') ||
+      text.includes('cross trainer') ||
+      text.includes('crosstrainer') ||
+      text.includes('elliptical') ||
       text.includes('hiit') ||
       text.includes('burpee') ||
       text.includes('jump')
     ) {
-      rawBurn += sets * 28;
+      rawBurn += sets * 32;
       cardioCount++;
     } else if (
       text.includes('leg') ||
@@ -587,7 +593,8 @@ export function calculateDayWorkoutNutrients(
       text.includes('glute') ||
       text.includes('hamstring') ||
       text.includes('deadlift') ||
-      text.includes('lunge')
+      text.includes('lunge') ||
+      text.includes('calf')
     ) {
       rawBurn += sets * 22;
       heavyMuscleVolume += sets;
@@ -603,11 +610,13 @@ export function calculateDayWorkoutNutrients(
       text.includes('chest') ||
       text.includes('bench') ||
       text.includes('press') ||
-      text.includes('push')
+      text.includes('push') ||
+      text.includes('pec') ||
+      text.includes('fly')
     ) {
       rawBurn += sets * 16;
       heavyMuscleVolume += sets;
-    } else if (text.includes('shoulder') || text.includes('delt')) {
+    } else if (text.includes('shoulder') || text.includes('delt') || text.includes('raise')) {
       rawBurn += sets * 14;
     } else if (
       text.includes('arm') ||
@@ -615,9 +624,11 @@ export function calculateDayWorkoutNutrients(
       text.includes('tricep') ||
       text.includes('core') ||
       text.includes('abs') ||
-      text.includes('crunch')
+      text.includes('crunch') ||
+      text.includes('plank') ||
+      text.includes('leg raise')
     ) {
-      rawBurn += sets * 10;
+      rawBurn += sets * 12;
     } else if (text.includes('stretch') || text.includes('mobility') || text.includes('yoga')) {
       rawBurn += sets * 6;
     } else {

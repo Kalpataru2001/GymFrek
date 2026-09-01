@@ -13,6 +13,7 @@ import {
   Equipment,
   Exercise,
   WorkoutDay,
+  USER_CUSTOM_WEEKLY_PLAN,
 } from '@/lib/workout-engine';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
@@ -142,6 +143,15 @@ export default function WorkoutPage() {
     setGenerating(false);
   };
 
+  // Load User Custom 6-Day Preset
+  const handleLoadCustomPlan = async () => {
+    if (!user) return;
+    setSaving(true);
+    await savePlanToDatabase(USER_CUSTOM_WEEKLY_PLAN);
+    setSaving(false);
+    setToast({ message: 'Loaded your 6-Day Custom Plan with all exercises & videos!', type: 'success' });
+  };
+
   // Day Focus Edit handler
   const handleOpenEditDay = () => {
     if (!plan || !plan.schedule[activeDay]) return;
@@ -249,7 +259,16 @@ export default function WorkoutPage() {
         </div>
 
         {plan && (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleLoadCustomPlan}
+              disabled={saving}
+              className="flex items-center gap-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3.5 py-2 rounded-lg transition-colors shadow-md shadow-orange-500/20 disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Load My 6-Day Routine
+            </button>
+
             <button
               onClick={handleOpenEditDay}
               className="flex items-center gap-1.5 text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3.5 py-2 rounded-lg transition-colors"
@@ -330,12 +349,24 @@ export default function WorkoutPage() {
               </div>
             </div>
           </div>
+          <div className="pt-2 border-t border-gray-700 space-y-2">
+            <button
+              onClick={handleLoadCustomPlan}
+              disabled={saving}
+              className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors shadow-md shadow-orange-500/20 flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Load My 6-Day Custom Split (Strength, Machines & Cardio)
+            </button>
+            <p className="text-center text-[11px] text-gray-400">or generate a standard automated split below:</p>
+          </div>
+
           <button
             onClick={generate}
             disabled={generating}
-            className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+            className="w-full bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors text-xs"
           >
-            {generating ? 'Generating Your Plan...' : 'Generate My Workout Plan'}
+            {generating ? 'Generating Your Plan...' : 'Generate Standard Workout Plan'}
           </button>
         </div>
       ) : (
