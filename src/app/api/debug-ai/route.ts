@@ -27,17 +27,18 @@ export async function GET() {
 
   const maskedKey = geminiKey.slice(0, 10) + '...' + geminiKey.slice(-4);
 
-  // Try ALL modern Gemini models + versions
+  // Try Gemini 3.x models first (as suggested by Google error messages), then fallbacks
   const attempts = [
-    { apiVersion: 'v1beta', model: 'gemini-2.0-flash' },
-    { apiVersion: 'v1beta', model: 'gemini-2.0-flash-lite' },
-    { apiVersion: 'v1beta', model: 'gemini-2.0-flash-exp' },
-    { apiVersion: 'v1beta', model: 'gemini-1.5-flash-latest' },
-    { apiVersion: 'v1beta', model: 'gemini-1.5-flash' },
-    { apiVersion: 'v1beta', model: 'gemini-1.5-pro' },
-    { apiVersion: 'v1beta', model: 'gemini-pro' },
-    { apiVersion: 'v1', model: 'gemini-1.5-flash' },
-    { apiVersion: 'v1', model: 'gemini-pro' },
+    { apiVersion: 'v1beta', model: 'gemini-3.6-flash' },
+    { apiVersion: 'v1beta', model: 'gemini-3.5-flash' },
+    { apiVersion: 'v1beta', model: 'gemini-3.5-flash-lite' },
+    { apiVersion: 'v1beta', model: 'gemini-3.0-flash' },
+    { apiVersion: 'v1beta', model: 'gemini-2.5-flash' },
+    { apiVersion: 'v1beta', model: 'gemini-2.5-flash-lite' },
+    { apiVersion: 'v1beta', model: 'gemini-2.5-pro' },
+    { apiVersion: 'v1beta', model: 'gemini-2.0-flash-001' },
+    { apiVersion: 'v1alpha', model: 'gemini-3.6-flash' },
+    { apiVersion: 'v1alpha', model: 'gemini-3.5-flash' },
   ];
 
   const results = [];
@@ -49,7 +50,7 @@ export async function GET() {
       apiVersion: attempt.apiVersion,
       httpStatus: result.status,
       ok: result.ok,
-      error: result.ok ? null : (result.data?.error?.message || 'unknown'),
+      error: result.ok ? null : (result.data?.error?.message?.slice(0, 120) || 'unknown'),
     };
     results.push(entry);
 
@@ -69,9 +70,8 @@ export async function GET() {
 
   return NextResponse.json({
     status: 'all_failed',
-    message: 'No Gemini model worked. See allAttempts for details.',
+    message: 'No Gemini model worked. See allAttempts for error details.',
     keyPreview: maskedKey,
     allAttempts: results,
-    hint: 'The key may need the Generative Language API enabled, or try a fresh key from aistudio.google.com',
   });
 }

@@ -1,16 +1,18 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { parseMealQueryLocally } from '@/lib/ai-nutrition-engine';
 
-// Try all modern Gemini models in order until one works
+// Ordered by likelihood - Gemini 3.x first (as recommended by Google error messages)
 const GEMINI_ATTEMPTS = [
-  { apiVersion: 'v1beta', model: 'gemini-2.0-flash' },
-  { apiVersion: 'v1beta', model: 'gemini-2.0-flash-lite' },
-  { apiVersion: 'v1beta', model: 'gemini-1.5-flash-latest' },
-  { apiVersion: 'v1beta', model: 'gemini-1.5-flash' },
-  { apiVersion: 'v1beta', model: 'gemini-1.5-pro' },
-  { apiVersion: 'v1beta', model: 'gemini-pro' },
-  { apiVersion: 'v1', model: 'gemini-1.5-flash' },
-  { apiVersion: 'v1', model: 'gemini-pro' },
+  { apiVersion: 'v1beta', model: 'gemini-3.6-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-3.5-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-3.5-flash-lite' },
+  { apiVersion: 'v1beta', model: 'gemini-3.0-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-2.5-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-2.5-flash-lite' },
+  { apiVersion: 'v1beta', model: 'gemini-2.5-pro' },
+  { apiVersion: 'v1beta', model: 'gemini-2.0-flash-001' },
+  { apiVersion: 'v1alpha', model: 'gemini-3.6-flash' },
+  { apiVersion: 'v1alpha', model: 'gemini-3.5-flash' },
 ];
 
 async function callGeminiWithFallback(key: string, prompt: string): Promise<{ text: string; model: string } | null> {
@@ -85,7 +87,7 @@ Return STRICT JSON only (no markdown):
           const parsed = JSON.parse(result.text);
           return NextResponse.json({ success: true, ...parsed, source: 'ai_gemini', modelUsed: result.model });
         } catch {
-          // JSON parse failed, fall through to local
+          // JSON parse failed, fall through
         }
       }
     }

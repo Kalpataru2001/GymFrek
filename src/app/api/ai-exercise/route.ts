@@ -1,6 +1,42 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { findExerciseVideo, normalizeGymQuery } from '@/lib/workout-engine';
 
+const GEMINI_ATTEMPTS = [
+  { apiVersion: 'v1beta', model: 'gemini-3.6-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-3.5-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-3.5-flash-lite' },
+  { apiVersion: 'v1beta', model: 'gemini-3.0-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-2.5-flash' },
+  { apiVersion: 'v1beta', model: 'gemini-2.5-flash-lite' },
+  { apiVersion: 'v1beta', model: 'gemini-2.5-pro' },
+  { apiVersion: 'v1beta', model: 'gemini-2.0-flash-001' },
+];
+
+async function callGeminiForExercise(key: string, prompt: string): Promise<string | null> {
+  for (const { apiVersion, model } of GEMINI_ATTEMPTS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${key}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json' },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { query } = await req.json();
@@ -18,8 +54,7 @@ export async function POST(req: NextRequest) {
     const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     if (geminiKey) {
-      try {
-        const prompt = `You are a certified master fitness coach and exercise physiologist.
+      const prompt = `You are a certified master fitness coach and exercise physiologist.
 Create a complete structured exercise guide for: "${raw}" (which corresponds to "${q}")
 
 Return STRICT RAW JSON only (no markdown, no backticks) in this format:
@@ -29,7 +64,7 @@ Return STRICT RAW JSON only (no markdown, no backticks) in this format:
   "sets": 3,
   "reps": "8-12",
   "rest": "60s",
-  "difficulty": "beginner" | "intermediate" | "advanced",
+  "difficulty": "beginner",
   "equipment": "e.g. Pair of Dumbbells / Barbell / Machine / Bodyweight",
   "instructions": "Clear 2-3 sentence execution instructions covering setup, movement path, and breathing.",
   "targetMuscles": ["Primary Muscle", "Secondary Muscle 1", "Secondary Muscle 2"],
@@ -37,33 +72,22 @@ Return STRICT RAW JSON only (no markdown, no backticks) in this format:
   "commonMistakes": ["Common mistake 1", "Common mistake 2"]
 }`;
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: 'application/json' },
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const parsed = JSON.parse(rawText);
-            return NextResponse.json({
-              success: true,
-              exercise: {
-                ...parsed,
-                videoUrl: localMatch?.videoUrl || 'bEv6CCg2BC8',
-                alternativeVideos: localMatch?.alternativeVideos || ['bEv6CCg2BC8', 'MeIiIdhvXT4', 'aclHkVaku9U'],
-              },
-              source: 'gemini_ai',
-            });
-          }
+      const rawText = await callGeminiForExercise(geminiKey, prompt);
+      if (rawText) {
+        try {
+          const parsed = JSON.parse(rawText);
+          return NextResponse.json({
+            success: true,
+            exercise: {
+              ...parsed,
+              videoUrl: localMatch?.videoUrl || 'bEv6CCg2BC8',
+              alternativeVideos: localMatch?.alternativeVideos || ['bEv6CCg2BC8', 'MeIiIdhvXT4', 'aclHkVaku9U'],
+            },
+            source: 'gemini_ai',
+          });
+        } catch {
+          // parse failed, proceed to fallback
         }
-      } catch (e) {
-        console.warn('Gemini API call for exercise failed, using smart fallback:', e);
       }
     }
 
