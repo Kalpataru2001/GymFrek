@@ -1,5 +1,5 @@
 /**
- * GymFrek — Health & Fitness Calculation Utilities
+ * GymFrek - Health & Fitness Calculation Utilities
  * Provides BMI, BMR, TDEE, Macro, and color-coding helpers.
  */
 
@@ -102,7 +102,7 @@ export interface MacroResult {
  *  - maintain     : 30 / 30 / 40
  *  - gain_muscle  : 30 / 25 / 45
  *
- * Fiber  : ~14g per 1000 kcal, clamped to 25–38g
+ * Fiber  : ~14g per 1000 kcal, clamped to 25-38g
  * Water  : 35ml × bodyweight kg; fallback 2500ml when weight is absent
  *
  * @param tdee      Total Daily Energy Expenditure in kcal
@@ -277,7 +277,7 @@ export interface DailyGrowthBreakdown {
 }
 
 /**
- * Calculates a 0–100% daily fitness growth & consistency score.
+ * Calculates a 0-100% daily fitness growth & consistency score.
  * Combines 3 core pillars:
  *  - Workout / Recovery consistency (40%)
  *  - Protein target adherence (35%)
@@ -479,4 +479,210 @@ export function getDayHealthStatus(
     description: 'Missed workout or under-fueled nutrition. Time to bounce back tomorrow!',
   };
 }
+
+// ─── DYNAMIC EXERCISE & WORKOUT DAY NUTRITION ENGINE ────────────────────────
+
+export interface WorkoutExerciseLike {
+  name?: string;
+  muscleGroup?: string;
+  sets?: number;
+  reps?: string;
+}
+
+export interface WorkoutDayLike {
+  day?: string;
+  focus?: string;
+  isRestDay?: boolean;
+  exercises?: WorkoutExerciseLike[];
+}
+
+export interface WorkoutNutrientImpact {
+  isRestDay: boolean;
+  primaryFocus: string;
+  exerciseCount: number;
+  totalSets: number;
+  estimatedBurnKcal: number;
+  intensityLabel: 'Rest Day' | 'Light Activity' | 'Moderate Training' | 'Heavy Resistance' | 'Extreme Intensity';
+  intensityColor: string;
+  calorieAdjustment: number;
+  proteinAdjustmentGrams: number;
+  carbAdjustmentGrams: number;
+  fatAdjustmentGrams: number;
+  targetMacros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  };
+  explanation: string;
+}
+
+/**
+ * Calculates dynamic daily calorie and protein needs based on the specific exercises
+ * scheduled for that workout day vs a rest day.
+ */
+export function calculateDayWorkoutNutrients(
+  day: WorkoutDayLike | null | undefined,
+  baseMacros: { calories: number; protein: number; carbs: number; fat: number; fiber: number },
+  weightKg?: number
+): WorkoutNutrientImpact {
+  const isRest = !day || day.isRestDay || !day.exercises || day.exercises.length === 0;
+
+  const exercises = day?.exercises || [];
+  if (isRest || exercises.length === 0) {
+    // Rest / Recovery Day: baseline maintenance/recovery nutrition
+    const restCalories = Math.max(1200, Math.round(baseMacros.calories - 150));
+    const restCarbs = Math.max(40, Math.round(baseMacros.carbs - 25));
+    const restFat = Math.round(baseMacros.fat + 4);
+
+    return {
+      isRestDay: true,
+      primaryFocus: day?.focus || 'Rest & Recovery',
+      exerciseCount: 0,
+      totalSets: 0,
+      estimatedBurnKcal: 0,
+      intensityLabel: 'Rest Day',
+      intensityColor: 'text-sky-400 bg-sky-500/10 border-sky-500/30',
+      calorieAdjustment: -150,
+      proteinAdjustmentGrams: 0,
+      carbAdjustmentGrams: -25,
+      fatAdjustmentGrams: 4,
+      targetMacros: {
+        calories: restCalories,
+        protein: baseMacros.protein,
+        carbs: restCarbs,
+        fat: restFat,
+        fiber: baseMacros.fiber,
+      },
+      explanation: 'Active recovery day. Baseline protein for muscle tissue repair with lower carbs and healthy fats.',
+    };
+  }
+
+  // Active Training Day: Calculate volume & energy expenditure
+  let rawBurn = 0;
+  let totalSets = 0;
+  let heavyMuscleVolume = 0;
+  let cardioCount = 0;
+
+  exercises.forEach(ex => {
+    const sets = typeof ex.sets === 'number' && ex.sets > 0 ? ex.sets : 3;
+    totalSets += sets;
+    const text = `${ex.name || ''} ${ex.muscleGroup || ''} ${day?.focus || ''}`.toLowerCase();
+
+    if (
+      text.includes('cardio') ||
+      text.includes('treadmill') ||
+      text.includes('running') ||
+      text.includes('hiit') ||
+      text.includes('burpee') ||
+      text.includes('jump')
+    ) {
+      rawBurn += sets * 28;
+      cardioCount++;
+    } else if (
+      text.includes('leg') ||
+      text.includes('squat') ||
+      text.includes('quad') ||
+      text.includes('glute') ||
+      text.includes('hamstring') ||
+      text.includes('deadlift') ||
+      text.includes('lunge')
+    ) {
+      rawBurn += sets * 22;
+      heavyMuscleVolume += sets;
+    } else if (
+      text.includes('back') ||
+      text.includes('row') ||
+      text.includes('lat') ||
+      text.includes('pull')
+    ) {
+      rawBurn += sets * 18;
+      heavyMuscleVolume += sets;
+    } else if (
+      text.includes('chest') ||
+      text.includes('bench') ||
+      text.includes('press') ||
+      text.includes('push')
+    ) {
+      rawBurn += sets * 16;
+      heavyMuscleVolume += sets;
+    } else if (text.includes('shoulder') || text.includes('delt')) {
+      rawBurn += sets * 14;
+    } else if (
+      text.includes('arm') ||
+      text.includes('bicep') ||
+      text.includes('tricep') ||
+      text.includes('core') ||
+      text.includes('abs') ||
+      text.includes('crunch')
+    ) {
+      rawBurn += sets * 10;
+    } else if (text.includes('stretch') || text.includes('mobility') || text.includes('yoga')) {
+      rawBurn += sets * 6;
+    } else {
+      rawBurn += sets * 14;
+    }
+  });
+
+  // Base warm-up / EPOC metabolic cost
+  rawBurn += 60;
+
+  // Scale by body weight (heavier athletes burn more mechanical work per movement)
+  const weightFactor = weightKg ? Math.min(1.45, Math.max(0.75, weightKg / 70)) : 1.0;
+  const estimatedBurnKcal = Math.round(Math.min(750, Math.max(160, rawBurn * weightFactor)));
+
+  // Intensity classification
+  let intensityLabel: WorkoutNutrientImpact['intensityLabel'] = 'Moderate Training';
+  let intensityColor = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+  let proteinBonus = 12;
+
+  if (estimatedBurnKcal >= 450 || heavyMuscleVolume >= 12 || cardioCount >= 2) {
+    intensityLabel = 'Extreme Intensity';
+    intensityColor = 'text-red-400 bg-red-500/10 border-red-500/30';
+    proteinBonus = 25;
+  } else if (estimatedBurnKcal >= 320 || heavyMuscleVolume >= 8) {
+    intensityLabel = 'Heavy Resistance';
+    intensityColor = 'text-orange-400 bg-orange-500/10 border-orange-500/30';
+    proteinBonus = 20;
+  } else if (estimatedBurnKcal < 220) {
+    intensityLabel = 'Light Activity';
+    intensityColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+    proteinBonus = 8;
+  }
+
+  // Refueling allocation:
+  const calorieAdjustment = Math.round(estimatedBurnKcal * 0.85); // 85% expenditure replenishment
+  const carbAdjustmentGrams = Math.round((calorieAdjustment * 0.60) / 4); // 60% of extra energy from carbs for glycogen
+  const fatAdjustmentGrams = Math.round((calorieAdjustment * 0.15) / 9);  // 15% from fats
+
+  const dynamicCalories = Math.round(baseMacros.calories + calorieAdjustment);
+  const dynamicProtein = Math.round(baseMacros.protein + proteinBonus);
+  const dynamicCarbs = Math.round(baseMacros.carbs + carbAdjustmentGrams);
+  const dynamicFat = Math.round(baseMacros.fat + fatAdjustmentGrams);
+
+  return {
+    isRestDay: false,
+    primaryFocus: day?.focus || 'Training Session',
+    exerciseCount: exercises.length,
+    totalSets,
+    estimatedBurnKcal,
+    intensityLabel,
+    intensityColor,
+    calorieAdjustment,
+    proteinAdjustmentGrams: proteinBonus,
+    carbAdjustmentGrams,
+    fatAdjustmentGrams,
+    targetMacros: {
+      calories: dynamicCalories,
+      protein: dynamicProtein,
+      carbs: dynamicCarbs,
+      fat: dynamicFat,
+      fiber: baseMacros.fiber,
+    },
+    explanation: `${intensityLabel} (${exercises.length} exercises, ${totalSets} sets). +${calorieAdjustment} kcal & +${proteinBonus}g protein to maximize muscle hypertrophy and glycogen recovery.`,
+  };
+}
+
+
 

@@ -1,5 +1,6 @@
 ﻿'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { calculateDayWorkoutNutrients } from '@/lib/calculations';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { db } from '@/lib/firebase';
@@ -218,6 +219,14 @@ export default function WorkoutPage() {
   const allDays = plan?.schedule ?? [];
   const currentDayData: WorkoutDay | undefined = allDays[activeDay];
 
+  const baseMacros = useMemo(() => profile?.macros || { calories: 2000, protein: 140, carbs: 200, fat: 60, fiber: 30 }, [profile]);
+
+  const currentDayNutrients = useMemo(() => {
+    return currentDayData
+      ? calculateDayWorkoutNutrients(currentDayData, baseMacros, profile?.weightKg)
+      : null;
+  }, [currentDayData, baseMacros, profile?.weightKg]);
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -399,6 +408,58 @@ export default function WorkoutPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Dynamic Exercise-Based Nutrition Needs Card */}
+              {currentDayNutrients && (
+                <div className="bg-gray-800/80 border border-gray-700/80 rounded-xl p-4 space-y-3 shadow-md">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-700/60 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-orange-400" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-300">
+                        Dynamic Daily Nutrition Target for this Workout
+                      </h4>
+                    </div>
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border self-start sm:self-auto ${currentDayNutrients.intensityColor}`}>
+                      {currentDayNutrients.intensityLabel}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="bg-gray-900/60 p-2.5 rounded-lg border border-gray-750">
+                      <span className="text-[10px] text-gray-400 block">Est. Session Burn</span>
+                      <span className="text-sm font-extrabold text-orange-400 flex items-center gap-1 mt-0.5">
+                        <Flame className="w-3.5 h-3.5" />
+                        {currentDayNutrients.estimatedBurnKcal > 0 ? `~${currentDayNutrients.estimatedBurnKcal} kcal` : '0 kcal (Rest)'}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-900/60 p-2.5 rounded-lg border border-gray-750">
+                      <span className="text-[10px] text-gray-400 block">Day Calorie Target</span>
+                      <span className="text-sm font-extrabold text-white mt-0.5 block">
+                        {currentDayNutrients.targetMacros.calories} <span className="text-[10px] font-normal text-gray-400">kcal ({currentDayNutrients.calorieAdjustment >= 0 ? `+${currentDayNutrients.calorieAdjustment}` : currentDayNutrients.calorieAdjustment})</span>
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-900/60 p-2.5 rounded-lg border border-gray-750">
+                      <span className="text-[10px] text-gray-400 block">Target Protein (MPS)</span>
+                      <span className="text-sm font-extrabold text-emerald-400 mt-0.5 block">
+                        {currentDayNutrients.targetMacros.protein}g <span className="text-[10px] font-normal text-gray-400">({currentDayNutrients.proteinAdjustmentGrams >= 0 ? `+${currentDayNutrients.proteinAdjustmentGrams}g` : 'Base'})</span>
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-900/60 p-2.5 rounded-lg border border-gray-750">
+                      <span className="text-[10px] text-gray-400 block">Carbs & Fats</span>
+                      <span className="text-sm font-extrabold text-sky-300 mt-0.5 block">
+                        {currentDayNutrients.targetMacros.carbs}g <span className="text-[10px] font-normal text-gray-400">C</span> / {currentDayNutrients.targetMacros.fat}g <span className="text-[10px] font-normal text-gray-400">F</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-gray-300 italic bg-gray-900/40 p-2.5 rounded-lg border border-gray-750/70">
+                    ðŸ’¡ {currentDayNutrients.explanation}
+                  </p>
+                </div>
+              )}
 
               {/* Day Rest State or Exercise List */}
               {currentDayData.isRestDay ? (
