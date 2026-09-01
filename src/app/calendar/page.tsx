@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
@@ -703,8 +703,15 @@ export default function CalendarPage() {
                         <p className="text-[10px] text-gray-400 font-medium truncate">
                           {scheduledDay?.isRestDay ? 'Recovery Day' : scheduledDay?.focus || 'Scheduled Plan'}
                         </p>
-                        <p className="text-[9px] text-gray-500 truncate">
-                          {dayNutrients.estimatedBurnKcal > 0 ? `ðŸ”¥ ~${dayNutrients.estimatedBurnKcal} kcal burn` : 'Target: ' + dayTargets.calories + ' kcal'}
+                        <p className="text-[9px] text-gray-500 truncate flex items-center gap-0.5">
+                          {dayNutrients.estimatedBurnKcal > 0 ? (
+                            <>
+                              <Flame className="w-2.5 h-2.5 text-orange-400 flex-shrink-0" />
+                              <span>~{dayNutrients.estimatedBurnKcal} kcal burn</span>
+                            </>
+                          ) : (
+                            <span>Target: {dayTargets.calories} kcal</span>
+                          )}
                         </p>
                       </div>
                     )}
@@ -864,8 +871,9 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <p className="text-[11px] text-gray-300 leading-relaxed bg-gray-900/40 p-2.5 rounded-lg border border-gray-750/70">
-              ðŸ’¡ {selectedDayNutrients.explanation}
+            <p className="text-[11px] text-gray-300 leading-relaxed bg-gray-900/40 p-2.5 rounded-lg border border-gray-750/70 flex items-start gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-orange-400 mt-0.5 flex-shrink-0" />
+              <span>{selectedDayNutrients.explanation}</span>
             </p>
 
             {/* Scheduled Exercises Chips Preview */}
@@ -1363,11 +1371,11 @@ export default function CalendarPage() {
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
                         <span className="font-semibold text-orange-400">{f.calories} kcal</span>
-                        <span>â€¢</span>
+                        <span className="text-gray-600">&bull;</span>
                         <span>{f.protein}g Protein</span>
-                        <span>â€¢</span>
+                        <span className="text-gray-600">&bull;</span>
                         <span>{f.carbs}g Carbs</span>
-                        <span>â€¢</span>
+                        <span className="text-gray-600">&bull;</span>
                         <span>{f.fat}g Fat</span>
                       </div>
                     </div>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { calculateDayWorkoutNutrients } from '@/lib/calculations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -455,8 +455,9 @@ export default function WorkoutPage() {
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-gray-300 italic bg-gray-900/40 p-2.5 rounded-lg border border-gray-750/70">
-                    ðŸ’¡ {currentDayNutrients.explanation}
+                  <p className="text-[11px] text-gray-300 italic bg-gray-900/40 p-2.5 rounded-lg border border-gray-750/70 flex items-start gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-orange-400 mt-0.5 flex-shrink-0" />
+                    <span>{currentDayNutrients.explanation}</span>
                   </p>
                 </div>
               )}

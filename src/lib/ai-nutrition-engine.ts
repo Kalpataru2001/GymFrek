@@ -131,7 +131,7 @@ export function parseMealQueryLocally(query: string): ParsedFoodResult {
     }
 
     // IMPORTANT: If no match found, DO NOT default to index 0 (wrong food).
-    // Track as unmatched â€” let Gemini handle it via the API route.
+    // Track as unmatched - let Gemini handle it via the API route.
     if (matches.length === 0) {
       unmatchedItems.push(cleanName || seg);
       continue;
