@@ -61,15 +61,31 @@ Return a STRICT JSON object (no markdown, just raw JSON):
             const parsed = JSON.parse(rawText);
             return NextResponse.json({ success: true, ...parsed, source: 'ai_gemini' });
           }
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.error('Gemini API error:', res.status, errData);
+          const localResult = parseMealQueryLocally(query);
+          return NextResponse.json({
+            success: true,
+            ...localResult,
+            source: 'ai_local',
+            geminiStatus: `failed_${res.status}`,
+            geminiError: (errData as { error?: { message?: string } })?.error?.message || `HTTP ${res.status}`,
+          });
         }
       } catch (e) {
-        console.warn('Gemini API call failed, falling back to smart local NLP parser:', e);
+        console.warn('Gemini API call failed:', e);
       }
     }
 
     // Smart Local NLP Parser Fallback
     const localResult = parseMealQueryLocally(query);
-    return NextResponse.json({ success: true, ...localResult, source: 'ai_local' });
+    return NextResponse.json({
+      success: true,
+      ...localResult,
+      source: 'ai_local',
+      geminiStatus: geminiKey ? 'exception_thrown' : 'key_not_set_in_env',
+    });
   } catch (error) {
     console.error('AI Nutrition API error:', error);
     return NextResponse.json({ error: 'Failed to analyze meal' }, { status: 500 });
