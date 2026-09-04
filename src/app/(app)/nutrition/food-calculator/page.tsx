@@ -56,21 +56,21 @@ export default function FoodCalculatorPage() {
       </div>
 
       {/* Search */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+      <div className="flex gap-2 sm:gap-3">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-gray-400"/>
           <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doSearch(query)}
-            placeholder="Search for any food..." className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-400 rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-orange-500"/>
+            placeholder="Search for any food..." className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-400 rounded-lg pl-9 sm:pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500"/>
         </div>
-        <button onClick={()=>doSearch(query)} disabled={loading} className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 rounded-lg transition-colors disabled:opacity-50">
+        <button onClick={()=>doSearch(query)} disabled={loading} className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 sm:px-6 rounded-lg transition-colors disabled:opacity-50 text-xs sm:text-sm flex-shrink-0">
           {loading ? '...' : 'Search'}
         </button>
       </div>
 
       {/* Quick searches */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {QUICK_SEARCHES.map(q=>(
-          <button key={q} onClick={()=>{setQuery(q);doSearch(q);}} className="text-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-3 py-1.5 rounded-full transition-colors">{q}</button>
+          <button key={q} onClick={()=>{setQuery(q);doSearch(q);}} className="text-xs sm:text-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full transition-colors">{q}</button>
         ))}
       </div>
 
@@ -79,7 +79,7 @@ export default function FoodCalculatorPage() {
 
       {/* Results */}
       {!loading && results.length > 0 && (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {results.map(food=>(
             <div key={food.fdcId} className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors">
               <h3 className="font-semibold text-white text-sm leading-tight mb-3 line-clamp-2">{food.description}</h3>

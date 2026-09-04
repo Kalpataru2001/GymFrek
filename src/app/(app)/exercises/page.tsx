@@ -65,8 +65,8 @@ export default function ExercisesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 bg-gray-800/80 p-4 rounded-xl border border-gray-700">
-        <div className="relative flex-1 min-w-[220px]">
+      <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 bg-gray-800/80 p-3 sm:p-4 rounded-xl border border-gray-700">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             value={search}
@@ -76,25 +76,27 @@ export default function ExercisesPage() {
           />
         </div>
 
-        <select
-          value={muscle}
-          onChange={e => setMuscle(e.target.value)}
-          className="bg-gray-700/80 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500"
-        >
-          {MUSCLES.map(m => (
-            <option key={m} value={m}>{m === 'All' ? 'All Muscle Groups' : m}</option>
-          ))}
-        </select>
+        <div className="grid grid-cols-2 sm:flex gap-2">
+          <select
+            value={muscle}
+            onChange={e => setMuscle(e.target.value)}
+            className="w-full sm:w-auto bg-gray-700/80 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500 truncate"
+          >
+            {MUSCLES.map(m => (
+              <option key={m} value={m}>{m === 'All' ? 'All Muscles' : m}</option>
+            ))}
+          </select>
 
-        <select
-          value={diff}
-          onChange={e => setDiff(e.target.value)}
-          className="bg-gray-700/80 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500 capitalize"
-        >
-          {DIFFICULTIES.map(d => (
-            <option key={d} value={d} className="capitalize">{d === 'All' ? 'All Experience Levels' : d}</option>
-          ))}
-        </select>
+          <select
+            value={diff}
+            onChange={e => setDiff(e.target.value)}
+            className="w-full sm:w-auto bg-gray-700/80 border border-gray-600 text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-orange-500 capitalize truncate"
+          >
+            {DIFFICULTIES.map(d => (
+              <option key={d} value={d} className="capitalize">{d === 'All' ? 'All Levels' : d}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <p className="text-xs text-gray-400">{filtered.length} exercise{filtered.length !== 1 ? 's' : ''} found</p>

@@ -281,7 +281,7 @@ export default function ProgressPage() {
             Daily Performance Report
           </h2>
           {/* 7-day date picker */}
-          <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none w-full sm:w-auto">
             {recentDays.map((d) => {
               const isToday = d === todayStr();
               const isSelected = d === selectedDate;
@@ -291,7 +291,7 @@ export default function ProgressPage() {
                   .toLocaleDateString('en-US', { weekday: 'short' });
               return (
                 <button key={d} onClick={() => setSelectedDate(d)}
-                  className={`text-xs px-2.5 py-1.5 rounded-lg font-medium border transition-colors ${
+                  className={`text-xs px-2.5 py-1.5 rounded-lg font-medium border flex-shrink-0 transition-colors ${
                     isSelected
                       ? 'bg-orange-500 border-orange-500 text-white'
                       : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white'

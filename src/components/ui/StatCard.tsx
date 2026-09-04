@@ -8,15 +8,16 @@ const StatCard=({title,value,unit,icon,trend,trendValue,color='orange'}:StatCard
   const {bg,text}=colorMap[color];
   const t=trend?trendCfg[trend]:null;
   return (
-    <div className="bg-gray-800 rounded-xl border border-gray-700 p-5 flex flex-col gap-4">
+    <div className="bg-gray-800 rounded-xl border border-gray-700 p-3.5 sm:p-5 flex flex-col gap-3 sm:gap-4 overflow-hidden">
       <div className="flex items-start justify-between">
-        {icon && <div className={cn('p-2.5 rounded-lg',bg)}><span className={cn('flex items-center',text)}>{icon}</span></div>}
-        {t&&trendValue&&<div className={cn('flex items-center gap-1 text-xs font-semibold',t.cls)}><t.Icon className="w-3.5 h-3.5"/><span>{trendValue}</span></div>}
+        {icon && <div className={cn('p-2 sm:p-2.5 rounded-lg',bg)}><span className={cn('flex items-center',text)}>{icon}</span></div>}
+        {t&&trendValue&&<div className={cn('flex items-center gap-1 text-[11px] sm:text-xs font-semibold',t.cls)}><t.Icon className="w-3.5 h-3.5"/><span>{trendValue}</span></div>}
       </div>
-      <div><p className="text-sm text-gray-400 font-medium mb-1">{title}</p>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-3xl font-bold text-white tabular-nums">{value}</span>
-          {unit&&<span className="text-sm text-gray-400">{unit}</span>}
+      <div className="min-w-0">
+        <p className="text-xs sm:text-sm text-gray-400 font-medium mb-0.5 sm:mb-1 truncate">{title}</p>
+        <div className="flex items-baseline gap-1 sm:gap-1.5 flex-wrap">
+          <span className="text-xl sm:text-3xl font-bold text-white tabular-nums leading-tight">{value}</span>
+          {unit&&<span className="text-xs sm:text-sm text-gray-400 font-normal">{unit}</span>}
         </div>
       </div>
     </div>

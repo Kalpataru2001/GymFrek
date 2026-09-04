@@ -541,28 +541,28 @@ export default function CalendarPage() {
         </div>
 
         {/* Quick Month Metrics */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="bg-gray-850 border border-gray-750 px-3 py-1.5 rounded-xl flex items-center gap-2">
-            <Flame className="w-4 h-4 text-orange-400" />
-            <div>
-              <span className="text-[10px] text-gray-400 block leading-none">Workouts</span>
-              <span className="text-xs font-bold text-white">{monthStats.completedWorkouts} Done</span>
+        <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+          <div className="bg-gray-850 border border-gray-750 px-2 sm:px-3 py-1.5 rounded-xl flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
+            <Flame className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-orange-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[9px] sm:text-[10px] text-gray-400 block leading-none truncate">Workouts</span>
+              <span className="text-[11px] sm:text-xs font-bold text-white truncate block">{monthStats.completedWorkouts} Done</span>
             </div>
           </div>
 
-          <div className="bg-gray-850 border border-gray-750 px-3 py-1.5 rounded-xl flex items-center gap-2">
-            <Moon className="w-4 h-4 text-sky-400" />
-            <div>
-              <span className="text-[10px] text-gray-400 block leading-none">Rest Days</span>
-              <span className="text-xs font-bold text-white">{monthStats.restDays} Logged</span>
+          <div className="bg-gray-850 border border-gray-750 px-2 sm:px-3 py-1.5 rounded-xl flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
+            <Moon className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-sky-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[9px] sm:text-[10px] text-gray-400 block leading-none truncate">Rest Days</span>
+              <span className="text-[11px] sm:text-xs font-bold text-white truncate block">{monthStats.restDays} Logged</span>
             </div>
           </div>
 
-          <div className="bg-gray-850 border border-gray-750 px-3 py-1.5 rounded-xl flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-emerald-400" />
-            <div>
-              <span className="text-[10px] text-gray-400 block leading-none">Avg Growth</span>
-              <span className="text-xs font-bold text-emerald-400">{monthStats.avgScore}%</span>
+          <div className="bg-gray-850 border border-gray-750 px-2 sm:px-3 py-1.5 rounded-xl flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
+            <Trophy className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-emerald-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="text-[9px] sm:text-[10px] text-gray-400 block leading-none truncate">Avg Growth</span>
+              <span className="text-[11px] sm:text-xs font-bold text-emerald-400 truncate block">{monthStats.avgScore}%</span>
             </div>
           </div>
         </div>
@@ -615,9 +615,9 @@ export default function CalendarPage() {
         {loading ? (
           <div className="flex justify-center py-24"><LoadingSpinner size="lg" /></div>
         ) : (
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {Array.from({ length: startOffset }).map((_, idx) => (
-              <div key={`empty-${idx}`} className="h-28 rounded-xl bg-gray-900/30 border border-gray-800/40 opacity-30" />
+              <div key={`empty-${idx}`} className="h-16 sm:h-28 rounded-lg sm:rounded-xl bg-gray-900/30 border border-gray-800/40 opacity-30" />
             ))}
 
             {Array.from({ length: daysInMonth }).map((_, idx) => {
@@ -647,48 +647,49 @@ export default function CalendarPage() {
                 <button
                   key={dateStr}
                   onClick={() => setSelectedDate(dateStr)}
-                  className={`relative flex flex-col justify-between h-28 p-2 rounded-xl border text-left transition-all duration-200 group hover:scale-[1.02] ${
+                  className={`relative flex flex-col justify-between h-16 sm:h-28 p-1 sm:p-2 rounded-lg sm:rounded-xl border text-left transition-all duration-200 group hover:scale-[1.02] ${
                     isToday
-                      ? `${dayVisual.tileClass} ring-2 ring-orange-500/80 ring-offset-2 ring-offset-gray-900`
+                      ? `${dayVisual.tileClass} ring-2 ring-orange-500/80 ring-offset-1 sm:ring-offset-2 ring-offset-gray-900`
                       : dayVisual.tileClass
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className={`text-xs font-bold flex items-center gap-1 ${isToday ? 'text-orange-400' : 'text-white'}`}>
+                    <span className={`text-[11px] sm:text-xs font-bold flex items-center gap-0.5 sm:gap-1 ${isToday ? 'text-orange-400' : 'text-white'}`}>
                       {dayNum}
-                      {isToday && <span className="text-[9px] font-semibold text-orange-400">Today</span>}
+                      {isToday && <span className="text-[8px] sm:text-[9px] font-semibold text-orange-400 hidden xs:inline">Today</span>}
                     </span>
 
                     {/* Status Pill Badge */}
                     {hasCompleted && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-400 bg-orange-500/20 px-1 py-0.2 rounded border border-orange-500/30">
-                        <Flame className="w-2.5 h-2.5" /> Done
+                      <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9px] font-bold text-orange-400 bg-orange-500/20 px-1 py-0.2 rounded border border-orange-500/30">
+                        <Flame className="w-2 sm:w-2.5 h-2 sm:h-2.5" /><span className="hidden sm:inline">Done</span>
                       </span>
                     )}
                     {isRest && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-sky-400 bg-sky-500/20 px-1 py-0.2 rounded border border-sky-500/30">
-                        <Moon className="w-2.5 h-2.5" /> Rest
+                      <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9px] font-bold text-sky-400 bg-sky-500/20 px-1 py-0.2 rounded border border-sky-500/30">
+                        <Moon className="w-2 sm:w-2.5 h-2 sm:h-2.5" /><span className="hidden sm:inline">Rest</span>
                       </span>
                     )}
                     {isMissed && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-rose-400 bg-rose-500/20 px-1 py-0.2 rounded border border-rose-500/30">
-                        <XCircle className="w-2.5 h-2.5" /> Missed
+                      <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9px] font-bold text-rose-400 bg-rose-500/20 px-1 py-0.2 rounded border border-rose-500/30">
+                        <XCircle className="w-2 sm:w-2.5 h-2 sm:h-2.5" /><span className="hidden sm:inline">Missed</span>
                       </span>
                     )}
                     {!hasCompleted && !isRest && !isMissed && dayVisual.type === 'high_fat_warning' && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-purple-300 bg-purple-500/20 px-1 py-0.2 rounded border border-purple-500/30">
-                        <AlertTriangle className="w-2.5 h-2.5" /> Fat Spike
+                      <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9px] font-bold text-purple-300 bg-purple-500/20 px-1 py-0.2 rounded border border-purple-500/30">
+                        <AlertTriangle className="w-2 sm:w-2.5 h-2 sm:h-2.5" /><span className="hidden sm:inline">Fat Spike</span>
                       </span>
                     )}
                     {!hasCompleted && !isRest && !isMissed && dayVisual.type !== 'high_fat_warning' && scheduledDay && !scheduledDay.isRestDay && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-gray-400 bg-gray-800/80 px-1 py-0.2 rounded border border-gray-700/60 truncate max-w-[65px]">
-                        <Dumbbell className="w-2.5 h-2.5 text-orange-400 flex-shrink-0" />
-                        <span className="truncate">{scheduledDay.focus.split(' ')[0]}</span>
+                      <span className="inline-flex items-center gap-0.5 text-[8px] sm:text-[9px] font-medium text-gray-400 bg-gray-800/80 px-1 py-0.2 rounded border border-gray-700/60 truncate max-w-[50px] sm:max-w-[65px]">
+                        <Dumbbell className="w-2 sm:w-2.5 h-2 sm:h-2.5 text-orange-400 flex-shrink-0" />
+                        <span className="truncate hidden sm:inline">{scheduledDay.focus.split(' ')[0]}</span>
                       </span>
                     )}
                   </div>
 
-                  <div className="w-full space-y-0.5 my-auto">
+                  {/* Desktop Middle Macro Details */}
+                  <div className="w-full space-y-0.5 my-auto hidden sm:block">
                     {log && log.totalCalories > 0 ? (
                       <>
                         <p className="text-[10px] font-semibold text-gray-200 truncate">
@@ -717,12 +718,23 @@ export default function CalendarPage() {
                     )}
                   </div>
 
-                  <div className="w-full flex items-center justify-between pt-1 border-t border-gray-700/50">
-                    <span className="text-[9px] text-gray-400 font-medium flex items-center gap-1">
-                      <span className={`w-1.5 h-1.5 rounded-full ${dayVisual.dotColor}`} />
-                      Growth
+                  {/* Mobile Compact Indicators */}
+                  <div className="w-full block sm:hidden my-auto text-center">
+                    {log && log.totalCalories > 0 ? (
+                      <span className="text-[9px] font-semibold text-orange-300 truncate block">
+                        {log.totalCalories}k
+                      </span>
+                    ) : (
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-600 mx-auto block" />
+                    )}
+                  </div>
+
+                  <div className="w-full flex items-center justify-between pt-0.5 sm:pt-1 border-t border-gray-700/50">
+                    <span className="text-[8px] sm:text-[9px] text-gray-400 font-medium flex items-center gap-1">
+                      <span className={`w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full ${dayVisual.dotColor}`} />
+                      <span className="hidden sm:inline">Growth</span>
                     </span>
-                    <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-md ${dayVisual.growthColor}`}>
+                    <span className={`text-[8px] sm:text-[10px] font-extrabold px-1 sm:px-1.5 py-0.2 rounded-md ${dayVisual.growthColor}`}>
                       {score > 0 ? `${score}%` : '-'}
                     </span>
                   </div>
