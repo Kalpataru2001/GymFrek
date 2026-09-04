@@ -695,5 +695,216 @@ export function calculateDayWorkoutNutrients(
   };
 }
 
+// ─── DAILY SUMMARY REPORT ─────────────────────────────────────────────────────
 
+export interface NutritionGap {
+  nutrient: string;
+  actual: number;
+  target: number;
+  unit: string;
+  gap: number;          // positive = deficit, negative = surplus
+  gapPct: number;       // absolute percent from target
+  severity: 'ok' | 'warn' | 'critical';
+  direction: 'deficit' | 'surplus' | 'on_track';
+}
+
+export interface DailySuggestion {
+  priority: 'high' | 'medium' | 'low';
+  icon: string;         // emoji
+  title: string;
+  detail: string;
+  category: 'nutrition' | 'workout' | 'recovery' | 'habit';
+}
+
+export interface DailySummaryReport {
+  date: string;
+  scoreBreakdown: DailyGrowthBreakdown;
+  nutritionGaps: NutritionGap[];
+  suggestions: DailySuggestion[];
+  highlights: string[];
+  workoutStatus: 'completed' | 'missed' | 'rest' | 'none';
+  workoutFocus: string;
+  estimatedBurnKcal: number;
+  totalFoodLogged: number;
+  mealBreakdown: Record<string, number>; // mealType -> calories
+}
+
+/**
+ * Generates a comprehensive end-of-day performance report with gaps and suggestions.
+ */
+export function generateDailySummaryReport(
+  log: {
+    date: string;
+    attendance: 'completed' | 'rest' | 'missed' | 'none';
+    foods?: Array<{ mealType?: string; calories: number; protein: number; carbs: number; fat: number; fiber: number }>;
+    totalCalories: number;
+    totalProtein: number;
+    totalCarbs: number;
+    totalFat: number;
+    totalFiber: number;
+    workoutTitle?: string;
+  },
+  targets: { calories: number; protein: number; carbs: number; fat: number; fiber: number },
+  dayImpact: WorkoutNutrientImpact,
+  userGoal?: string
+): DailySummaryReport {
+  const dynTargets = dayImpact.targetMacros;
+
+  // --- Nutrition Gaps ---
+  const nutritionGaps: NutritionGap[] = (['calories', 'protein', 'carbs', 'fat', 'fiber'] as const).map(key => {
+    const actual = Number(log[`total${key.charAt(0).toUpperCase() + key.slice(1)}` as 'totalCalories' | 'totalProtein' | 'totalCarbs' | 'totalFat' | 'totalFiber'] ?? 0);
+    const target = dynTargets[key];
+    const gap = target - actual;
+    const gapPct = target > 0 ? Math.round((Math.abs(gap) / target) * 100) : 0;
+    const unit = key === 'calories' ? 'kcal' : 'g';
+    const direction: NutritionGap['direction'] = gapPct <= 10 ? 'on_track' : gap > 0 ? 'deficit' : 'surplus';
+    let severity: NutritionGap['severity'] = 'ok';
+    if (direction !== 'on_track') {
+      severity = gapPct >= 25 ? 'critical' : 'warn';
+    }
+    return { nutrient: key, actual, target, unit, gap, gapPct, severity, direction };
+  });
+
+  // --- Score ---
+  const scoreBreakdown = calculateDailyGrowthScore(
+    { calories: dynTargets.calories, protein: dynTargets.protein },
+    { calories: log.totalCalories, protein: log.totalProtein },
+    log.attendance
+  );
+
+  // --- Highlights (what user did well) ---
+  const highlights: string[] = [];
+  if (log.attendance === 'completed') highlights.push('Workout completed — great job!');
+  if (log.attendance === 'rest') highlights.push('Planned rest day taken — muscles are recovering.');
+  const calorieGap = nutritionGaps.find(g => g.nutrient === 'calories');
+  const proteinGap = nutritionGaps.find(g => g.nutrient === 'protein');
+  const fiberGap = nutritionGaps.find(g => g.nutrient === 'fiber');
+  if (calorieGap && calorieGap.severity === 'ok') highlights.push('Calories well within target range.');
+  if (proteinGap && proteinGap.severity === 'ok') highlights.push('Protein target hit — muscle synthesis supported.');
+  if ((log.foods?.length ?? 0) >= 3) highlights.push('Good meal diversity — food logged across multiple meal types.');
+  if (fiberGap && fiberGap.severity === 'ok') highlights.push('Fiber intake on track — gut health is good.');
+
+  // --- Suggestions (ranked by priority) ---
+  const suggestions: DailySuggestion[] = [];
+
+  // Workout suggestions
+  if (log.attendance === 'missed') {
+    suggestions.push({
+      priority: 'high', icon: '🏃', category: 'workout',
+      title: 'Missed workout detected',
+      detail: 'Schedule your session for tomorrow. Even a 20-min light workout beats skipping entirely.',
+    });
+  } else if (log.attendance === 'none' && !dayImpact.isRestDay) {
+    suggestions.push({
+      priority: 'high', icon: '💪', category: 'workout',
+      title: 'Mark your workout attendance',
+      detail: 'Check in on the Calendar tab to log your workout status and unlock your Growth Score.',
+    });
+  }
+
+  // Protein suggestions (most impactful for goals)
+  if (proteinGap && proteinGap.direction === 'deficit') {
+    const grams = Math.round(proteinGap.gap);
+    const foodSuggestions = grams >= 30
+      ? `100g chicken breast (+31g), 2 eggs (+12g), or a protein shake (+25g).`
+      : `a boiled egg (+6g), 50g paneer (+9g), or 100ml Greek yogurt (+10g).`;
+    suggestions.push({
+      priority: proteinGap.severity === 'critical' ? 'high' : 'medium',
+      icon: '🥩', category: 'nutrition',
+      title: `Need ${grams}g more protein`,
+      detail: `Try ${foodSuggestions}`,
+    });
+  } else if (proteinGap && proteinGap.direction === 'surplus' && proteinGap.gapPct > 20) {
+    suggestions.push({
+      priority: 'low', icon: '⚖️', category: 'nutrition',
+      title: `Protein slightly high (+${Math.abs(Math.round(proteinGap.gap))}g over target)`,
+      detail: 'Extra protein is generally fine for muscle building, but balance with complex carbs.',
+    });
+  }
+
+  // Calorie suggestions
+  if (calorieGap && calorieGap.direction === 'deficit' && calorieGap.gapPct >= 15) {
+    const kcal = Math.round(calorieGap.gap);
+    const goalContext = userGoal === 'lose_weight'
+      ? 'Your deficit is larger than planned — eat a small snack to avoid muscle catabolism.'
+      : `Add ${kcal} kcal more — a banana + nut butter, or a bowl of rice, would cover this.`;
+    suggestions.push({
+      priority: calorieGap.severity === 'critical' ? 'high' : 'medium',
+      icon: '🔥', category: 'nutrition',
+      title: `${kcal} kcal below your daily target`,
+      detail: goalContext,
+    });
+  } else if (calorieGap && calorieGap.direction === 'surplus' && calorieGap.gapPct >= 15) {
+    const kcal = Math.abs(Math.round(calorieGap.gap));
+    suggestions.push({
+      priority: userGoal === 'lose_weight' ? 'high' : 'medium',
+      icon: '📉', category: 'nutrition',
+      title: `${kcal} kcal above target today`,
+      detail: userGoal === 'lose_weight'
+        ? 'Consider reducing portion sizes tomorrow and add 10 min extra cardio.'
+        : 'Slight surplus is fine for muscle gain — ensure carbs came from quality sources.',
+    });
+  }
+
+  // Fiber suggestions
+  if (fiberGap && fiberGap.direction === 'deficit' && fiberGap.gapPct >= 25) {
+    suggestions.push({
+      priority: 'medium', icon: '🥦', category: 'nutrition',
+      title: `Fiber ${Math.round(fiberGap.gap)}g short`,
+      detail: 'Add a large salad, an apple, a cup of lentils (+16g), or oats for tomorrow\'s breakfast.',
+    });
+  }
+
+  // Fat suggestions
+  const fatGap = nutritionGaps.find(g => g.nutrient === 'fat');
+  if (fatGap && fatGap.direction === 'surplus' && fatGap.gapPct >= 30 && log.attendance !== 'completed') {
+    suggestions.push({
+      priority: 'medium', icon: '🧈', category: 'nutrition',
+      title: `High fat intake without a workout (${Math.abs(Math.round(fatGap.gap))}g over)`,
+      detail: 'Reduce fried foods and oils. Choose lean proteins and steamed/grilled options.',
+    });
+  }
+
+  // Hydration / habit
+  if (log.totalCalories > 0 && log.totalFiber < 10) {
+    suggestions.push({
+      priority: 'low', icon: '💧', category: 'habit',
+      title: 'Drink more water today',
+      detail: 'Low fiber + training = higher dehydration risk. Aim for 8–10 glasses (2–2.5L) daily.',
+    });
+  }
+
+  // Recovery
+  if (log.attendance === 'completed' && scoreBreakdown.score >= 75) {
+    suggestions.push({
+      priority: 'low', icon: '😴', category: 'recovery',
+      title: 'Great session! Prioritize sleep tonight',
+      detail: '7–9 hours of sleep is when 90% of muscle repair and growth hormone release happens.',
+    });
+  }
+
+  // Sort: high → medium → low
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  suggestions.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+  // Meal breakdown
+  const mealBreakdown: Record<string, number> = {};
+  (log.foods ?? []).forEach(f => {
+    const meal = (f as { mealType?: string }).mealType || 'other';
+    mealBreakdown[meal] = (mealBreakdown[meal] || 0) + f.calories;
+  });
+
+  return {
+    date: log.date,
+    scoreBreakdown,
+    nutritionGaps,
+    suggestions,
+    highlights,
+    workoutStatus: log.attendance,
+    workoutFocus: dayImpact.primaryFocus,
+    estimatedBurnKcal: dayImpact.estimatedBurnKcal,
+    totalFoodLogged: log.foods?.length ?? 0,
+    mealBreakdown,
+  };
+}
 
