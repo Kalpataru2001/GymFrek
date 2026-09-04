@@ -33,37 +33,41 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       {/* Mobile hamburger */}
       <button
         onClick={onMenuClick}
-        className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white lg:hidden"
+        className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white lg:hidden transition-colors"
         aria-label="Toggle sidebar"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500">
+      {/* Mobile Logo ONLY - Hidden on Desktop since Fixed Sidebar already displays the logo */}
+      <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 shadow-sm shadow-orange-500/30">
           <Dumbbell className="h-4 w-4 text-white" />
         </div>
-        <span className="hidden text-lg font-bold text-white sm:block">
+        <span className="text-lg font-bold text-white">
           Gym<span className="text-orange-500">Frek</span>
         </span>
       </Link>
+
+      {/* Desktop Left: Breadcrumb / Status (NO duplicate logo) */}
+      <div className="hidden lg:flex items-center gap-2 text-sm text-gray-400">
+        <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="text-gray-400">{greeting()},</span>
+        <span className="font-semibold text-white">
+          {(profile?.displayName ?? user?.displayName ?? 'Champ').split(' ')[0]}
+        </span>
+        <span className="text-xs text-gray-500">&bull;</span>
+        <span className="text-xs text-gray-400">
+          {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+        </span>
+      </div>
 
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Right side */}
       <div className="flex items-center gap-3">
-        {/* Greeting (md+) */}
-        {profile && (
-          <p className="hidden text-sm text-gray-400 md:block">
-            {greeting()},{' '}
-            <span className="font-medium text-white">
-              {(profile.displayName ?? 'Champ').split(' ')[0]}
-            </span>{' '}
-            💪
-          </p>
-        )}
+        {/* Right side greeting (mobile only or subtle) */}
 
         {/* Notifications placeholder */}
         <button

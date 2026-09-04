@@ -84,10 +84,10 @@ export default function FoodCalculatorPage() {
             <div key={food.fdcId} className="bg-gray-800 rounded-xl border border-gray-700 p-5 hover:border-gray-600 transition-colors">
               <h3 className="font-semibold text-white text-sm leading-tight mb-3 line-clamp-2">{food.description}</h3>
               <div className="flex flex-wrap gap-2 mb-4">
-                <Badge variant="orange">{food.nutrients.calories?.toFixed(0) ?? '—'} kcal</Badge>
-                <Badge variant="blue">P: {food.nutrients.protein?.toFixed(1) ?? '—'}g</Badge>
-                <Badge variant="gray">C: {food.nutrients.carbs?.toFixed(1) ?? '—'}g</Badge>
-                <Badge variant="yellow">F: {food.nutrients.fat?.toFixed(1) ?? '—'}g</Badge>
+                <Badge variant="orange">{food.nutrients.calories?.toFixed(0) ?? '-'} kcal</Badge>
+                <Badge variant="blue">P: {food.nutrients.protein?.toFixed(1) ?? '-'}g</Badge>
+                <Badge variant="gray">C: {food.nutrients.carbs?.toFixed(1) ?? '-'}g</Badge>
+                <Badge variant="yellow">F: {food.nutrients.fat?.toFixed(1) ?? '-'}g</Badge>
               </div>
               <p className="text-xs text-gray-500 mb-3">Per 100g</p>
               <button onClick={()=>{setSelectedFood(food);setServing(100);}} className="w-full bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 font-medium py-2 rounded-lg text-sm transition-colors">
@@ -124,7 +124,7 @@ export default function FoodCalculatorPage() {
               ].map(n=>(
                 <div key={n.label} className="bg-gray-700 rounded-lg px-4 py-3">
                   <p className="text-xs text-gray-400">{n.label}</p>
-                  <p className="text-lg font-semibold text-white">{n.value ?? '—'}<span className="text-xs text-gray-400 ml-1">{n.unit}</span></p>
+                  <p className="text-lg font-semibold text-white">{n.value ?? '-'}<span className="text-xs text-gray-400 ml-1">{n.unit}</span></p>
                 </div>
               ))}
             </div>

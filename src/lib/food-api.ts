@@ -1,5 +1,5 @@
 /**
- * GymFrek — USDA FoodData Central API Integration
+ * GymFrek - USDA FoodData Central API Integration
  * Docs: https://fdc.nal.usda.gov/api-guide.html
  */
 

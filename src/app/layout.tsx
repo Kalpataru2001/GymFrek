@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'GymFrek – Your Smart Fitness Companion',
+  title: 'GymFrek - Your Smart Fitness Companion',
   description:
     'Track workouts, nutrition, and progress with AI-powered plans tailored to your goals.',
 };
