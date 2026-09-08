@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getBMIColor } from '@/lib/calculations';
 import StatCard from '@/components/ui/StatCard';
 import ProgressBar from '@/components/ui/ProgressBar';
@@ -105,6 +105,44 @@ export default function DashboardPage() {
       setTodayLogLoaded(true);
     }).catch(() => setTodayLogLoaded(true));
   }, [user, profile]);
+
+  const handleAddWater = async (ml: number) => {
+    if (!user) return;
+    const today = todayStr();
+    const currentWater = todayLog?.waterMl ?? 0;
+    const newWater = Math.max(0, currentWater + ml);
+    const updated: DailyLog = {
+      id: `${user.uid}_${today}`,
+      uid: user.uid,
+      date: today,
+      attendance: todayLog?.attendance || 'none',
+      foods: todayLog?.foods || [],
+      totalCalories: todayLog?.totalCalories || 0,
+      totalProtein: todayLog?.totalProtein || 0,
+      totalCarbs: todayLog?.totalCarbs || 0,
+      totalFat: todayLog?.totalFat || 0,
+      totalFiber: todayLog?.totalFiber || 0,
+      growthScore: todayLog?.growthScore || 0,
+      waterMl: newWater,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setTodayLog(updated);
+
+    try {
+      const cacheKey = `gymfrek_logs_${user.uid}`;
+      const cached = localStorage.getItem(cacheKey);
+      const map = cached ? JSON.parse(cached) : {};
+      map[today] = updated;
+      localStorage.setItem(cacheKey, JSON.stringify(map));
+    } catch { /* */ }
+
+    try {
+      await setDoc(doc(db, 'dailyLogs', `${user.uid}_${today}`), updated, { merge: true });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   if (authLoading || profileLoading) return <div className="flex items-center justify-center h-full"><LoadingSpinner size="lg"/></div>;
   if (!user) return null;
@@ -210,6 +248,40 @@ export default function DashboardPage() {
               <ProgressBar label={`Fiber — ${macros.fiber}g target`} value={todayLog?.totalFiber ?? 0} max={macros.fiber} color="green" showLabel/>
               <ProgressBar label={`Water — ${todayLog?.waterMl ?? 0} / ${macros.water || 2500} ml`} value={todayLog?.waterMl ?? 0} max={macros.water || 2500} color="blue" showLabel/>
             </div>
+
+            {/* 1-Tap Quick Water Intake Buttons */}
+            <div className="flex items-center justify-between gap-2 p-2.5 bg-gray-750/70 rounded-xl border border-gray-700">
+              <span className="text-[11px] text-gray-300 font-semibold flex items-center gap-1.5">
+                <Droplets className="w-3.5 h-3.5 text-sky-400" /> Log Water:
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleAddWater(250)}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 transition-colors"
+                >
+                  +250ml
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddWater(500)}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 transition-colors"
+                >
+                  +500ml
+                </button>
+                {(todayLog?.waterMl ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAddWater(-250)}
+                    className="text-[10px] text-gray-400 hover:text-white px-2 py-1 rounded-lg bg-gray-700 hover:bg-gray-650 transition-colors"
+                    title="Undo 250ml"
+                  >
+                    -250ml
+                  </button>
+                )}
+              </div>
+            </div>
+
             {(!todayLogLoaded || todayKcal === 0) && (
               <p className="text-xs text-gray-500 text-center">No meals logged today yet.</p>
             )}

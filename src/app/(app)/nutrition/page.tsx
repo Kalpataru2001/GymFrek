@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { DailyLog, DayFoodItem } from '@/lib/types';
 import ProgressBar from '@/components/ui/ProgressBar';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -46,6 +46,44 @@ export default function NutritionPage() {
       })
       .catch(() => setLoaded(true));
   }, [user]);
+
+  const handleAddWater = async (ml: number) => {
+    if (!user) return;
+    const today = todayStr();
+    const currentWater = todayLog?.waterMl ?? 0;
+    const newWater = Math.max(0, currentWater + ml);
+    const updated: DailyLog = {
+      id: `${user.uid}_${today}`,
+      uid: user.uid,
+      date: today,
+      attendance: todayLog?.attendance || 'none',
+      foods: todayLog?.foods || [],
+      totalCalories: todayLog?.totalCalories || 0,
+      totalProtein: todayLog?.totalProtein || 0,
+      totalCarbs: todayLog?.totalCarbs || 0,
+      totalFat: todayLog?.totalFat || 0,
+      totalFiber: todayLog?.totalFiber || 0,
+      growthScore: todayLog?.growthScore || 0,
+      waterMl: newWater,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setTodayLog(updated);
+
+    try {
+      const cacheKey = `gymfrek_logs_${user.uid}`;
+      const cached = localStorage.getItem(cacheKey);
+      const map = cached ? JSON.parse(cached) : {};
+      map[today] = updated;
+      localStorage.setItem(cacheKey, JSON.stringify(map));
+    } catch { /* */ }
+
+    try {
+      await setDoc(doc(db, 'dailyLogs', `${user.uid}_${today}`), updated, { merge: true });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const pieData = m
     ? [
@@ -153,6 +191,46 @@ export default function NutritionPage() {
               <ProgressBar label={`Fat: ${todayFat}g / ${m.fat}g target`} value={todayFat} max={m.fat} color="yellow" showLabel />
               <ProgressBar label={`Fiber: ${todayFiber}g / ${m.fiber}g target`} value={todayFiber} max={m.fiber} color="green" showLabel />
               <ProgressBar label={`Water: ${todayWater}ml / ${m.water}ml target`} value={todayWater} max={m.water} color="blue" showLabel />
+            </div>
+
+            {/* Quick 1-Tap Water Logging */}
+            <div className="flex items-center justify-between gap-2 p-2.5 bg-gray-750/70 rounded-xl border border-gray-700">
+              <span className="text-[11px] text-gray-300 font-semibold flex items-center gap-1.5">
+                <Droplets className="w-3.5 h-3.5 text-sky-400" /> Quick Add Water:
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleAddWater(250)}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 transition-colors"
+                >
+                  +250ml
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddWater(500)}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 transition-colors"
+                >
+                  +500ml
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddWater(1000)}
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky-500/25 hover:bg-sky-500/35 border border-sky-500/50 text-white transition-colors"
+                >
+                  +1L
+                </button>
+                {todayWater > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAddWater(-250)}
+                    className="text-[10px] text-gray-400 hover:text-white px-2 py-1 rounded-lg bg-gray-700 hover:bg-gray-650 transition-colors"
+                    title="Undo 250ml"
+                  >
+                    -250ml
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
