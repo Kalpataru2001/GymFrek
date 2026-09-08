@@ -238,7 +238,7 @@ export default function ProgressPage() {
   const report: DailySummaryReport | null = useMemo(() => {
     const logData = dailyLog ?? {
       date: selectedDate, attendance: 'none' as const, foods: [],
-      totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, totalFiber: 0,
+      totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0, totalFiber: 0, waterMl: 0,
     };
     if (!dailyLog && reportLoading) return null;
     return generateDailySummaryReport(logData, baseMacros, dayImpact, profile?.goal);

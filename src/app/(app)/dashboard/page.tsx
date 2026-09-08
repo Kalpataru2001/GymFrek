@@ -10,8 +10,8 @@ import StatCard from '@/components/ui/StatCard';
 import ProgressBar from '@/components/ui/ProgressBar';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Link from 'next/link';
-import { Dumbbell, Apple, Weight, Flame, Droplets, Target, CheckCircle2, XCircle, Moon, Clock } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Dumbbell, Apple, Weight, Flame, Droplets, Target, CheckCircle2, XCircle, Moon, Clock, Calendar, Activity } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import type { DailyLog, WorkoutAttendance } from '@/lib/types';
 
 interface WeightEntry { date: string; weightKg: number; }
@@ -42,6 +42,13 @@ export default function DashboardPage() {
   const [weightLogs, setWeightLogs] = useState<WeightEntry[]>([]);
   const [todayLog, setTodayLog] = useState<DailyLog | null>(null);
   const [todayLogLoaded, setTodayLogLoaded] = useState(false);
+  const [weeklyHistory, setWeeklyHistory] = useState<{
+    date: string;
+    dayLabel: string;
+    calories: number;
+    target: number;
+    attendance: WorkoutAttendance;
+  }[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
@@ -56,25 +63,48 @@ export default function DashboardPage() {
     });
   }, [user]);
 
-  // Fetch today's daily log for live dashboard status
+  // Fetch today's daily log and 7-day history for live dashboard status
   useEffect(() => {
     if (!user) return;
     const today = todayStr();
-    // Try cache first
+    const targetKcal = profile?.macros?.calories ?? 2000;
+
+    // Load from cache
     try {
       const cacheKey = `gymfrek_logs_${user.uid}`;
       const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const map = JSON.parse(cached) as Record<string, DailyLog>;
-        if (map[today]) { setTodayLog(map[today]); setTodayLogLoaded(true); }
+      const map: Record<string, DailyLog> = cached ? JSON.parse(cached) : {};
+      if (map[today]) { setTodayLog(map[today]); setTodayLogLoaded(true); }
+
+      // Compute last 7 days history
+      const history = [];
+      const now = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dayNum = String(d.getDate()).padStart(2, '0');
+        const dStr = `${y}-${m}-${dayNum}`;
+        const log = map[dStr];
+        const dayLabel = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+        history.push({
+          date: dStr,
+          dayLabel,
+          calories: log?.totalCalories ?? 0,
+          target: targetKcal,
+          attendance: (log?.attendance || 'none') as WorkoutAttendance,
+        });
       }
+      setWeeklyHistory(history);
     } catch { /* */ }
+
     // Always verify with Firestore
     getDoc(doc(db, 'dailyLogs', `${user.uid}_${today}`)).then(snap => {
       setTodayLog(snap.exists() ? (snap.data() as DailyLog) : null);
       setTodayLogLoaded(true);
     }).catch(() => setTodayLogLoaded(true));
-  }, [user]);
+  }, [user, profile]);
 
   if (authLoading || profileLoading) return <div className="flex items-center justify-center h-full"><LoadingSpinner size="lg"/></div>;
   if (!user) return null;
@@ -152,7 +182,13 @@ export default function DashboardPage() {
         <StatCard title="BMI" value={bmi.toFixed(1)} unit={profile?.bmiCategory} icon={<Target className="w-5 h-5"/>} color={bmi < 18.5 ? 'blue' : bmi < 25 ? 'green' : bmi < 30 ? 'orange' : 'purple'}/>
         <StatCard title="Daily Calories" value={macros?.calories ?? '-'} unit="kcal" icon={<Flame className="w-5 h-5"/>} color="orange"/>
         <StatCard title="Current Weight" value={profile?.weightKg ?? '-'} unit="kg" icon={<Weight className="w-5 h-5"/>} color="blue"/>
-        <StatCard title="Water Goal" value={macros?.water ?? '-'} unit="ml" icon={<Droplets className="w-5 h-5"/>} color="blue"/>
+        <StatCard
+          title="Water Intake"
+          value={todayLogLoaded ? (todayLog?.waterMl ?? 0) : '-'}
+          unit={macros?.water ? `/ ${macros.water} ml` : 'ml'}
+          icon={<Droplets className="w-5 h-5"/>}
+          color="blue"
+        />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -160,7 +196,7 @@ export default function DashboardPage() {
         {macros && (
           <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2"><Apple className="w-5 h-5 text-orange-400"/>Today&apos;s Nutrition</h2>
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2"><Apple className="w-5 h-5 text-orange-400"/>Today&apos;s Nutrition &amp; Hydration</h2>
               {todayLogLoaded && todayKcal > 0 && (
                 <span className="text-xs text-orange-300 font-semibold bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
                   {todayKcal} / {kcalTarget} kcal
@@ -172,6 +208,7 @@ export default function DashboardPage() {
               <ProgressBar label={`Carbs — ${macros.carbs}g target`} value={todayLog?.totalCarbs ?? 0} max={macros.carbs} color="blue" showLabel/>
               <ProgressBar label={`Fat — ${macros.fat}g target`} value={todayLog?.totalFat ?? 0} max={macros.fat} color="yellow" showLabel/>
               <ProgressBar label={`Fiber — ${macros.fiber}g target`} value={todayLog?.totalFiber ?? 0} max={macros.fiber} color="green" showLabel/>
+              <ProgressBar label={`Water — ${todayLog?.waterMl ?? 0} / ${macros.water || 2500} ml`} value={todayLog?.waterMl ?? 0} max={macros.water || 2500} color="blue" showLabel/>
             </div>
             {(!todayLogLoaded || todayKcal === 0) && (
               <p className="text-xs text-gray-500 text-center">No meals logged today yet.</p>
@@ -194,6 +231,67 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* 7-Day Performance & Calorie Summary Card */}
+      {weeklyHistory.length > 0 && (
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-orange-400" />
+                7-Day Consistency &amp; Calorie Tracking
+              </h2>
+              <p className="text-xs text-gray-400">
+                Daily calorie intake vs your {macros?.calories ?? 2000} kcal target &amp; workout check-ins.
+              </p>
+            </div>
+
+            <Link
+              href="/progress"
+              className="text-xs font-semibold text-orange-400 hover:text-orange-300 self-start sm:self-auto"
+            >
+              View Full Daily Analysis &rarr;
+            </Link>
+          </div>
+
+          {/* Bar Chart */}
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={weeklyHistory}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="dayLabel" stroke="#9CA3AF" tick={{ fontSize: 12 }} />
+              <YAxis stroke="#9CA3AF" tick={{ fontSize: 12 }} domain={[0, 'auto']} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#fff',
+                }}
+                formatter={(val: any) => [`${val} kcal`, 'Calories']}
+              />
+              <Bar dataKey="calories" fill="#F97316" radius={[4, 4, 0, 0]} name="Logged Calories" />
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Day Badges Strip */}
+          <div className="grid grid-cols-7 gap-1.5 pt-2 border-t border-gray-750 text-center">
+            {weeklyHistory.map(day => (
+              <div key={day.date} className="bg-gray-750/70 p-2 rounded-lg">
+                <p className="text-[10px] text-gray-400 font-bold uppercase truncate">{day.dayLabel}</p>
+                <div className="my-1 flex items-center justify-center">
+                  {day.attendance === 'completed' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                  {day.attendance === 'rest' && <Moon className="w-4 h-4 text-sky-400" />}
+                  {day.attendance === 'missed' && <XCircle className="w-4 h-4 text-red-400" />}
+                  {day.attendance === 'none' && <span className="w-2 h-2 rounded-full bg-gray-600 inline-block" />}
+                </div>
+                <span className="text-[10px] font-bold text-gray-200 block truncate">
+                  {day.calories > 0 ? `${day.calories}` : '0'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Weight Chart */}
       {weightLogs.length > 0 && (

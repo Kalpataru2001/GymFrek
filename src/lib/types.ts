@@ -156,6 +156,7 @@ export interface DailyLog {
   totalCarbs: number;
   totalFat: number;
   totalFiber: number;
+  waterMl: number; // water intake in ml
   growthScore: number; // 0 - 100
   updatedAt?: string;
 }

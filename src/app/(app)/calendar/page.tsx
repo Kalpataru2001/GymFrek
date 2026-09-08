@@ -51,6 +51,7 @@ import {
   Dumbbell,
   Layers,
   Activity,
+  Droplets,
 } from 'lucide-react';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
@@ -285,6 +286,7 @@ export default function CalendarPage() {
         totalCarbs: 0,
         totalFat: 0,
         totalFiber: 0,
+        waterMl: 0,
         growthScore: 0,
       };
     }
@@ -299,6 +301,7 @@ export default function CalendarPage() {
       totalCarbs: 0,
       totalFat: 0,
       totalFiber: 0,
+      waterMl: 0,
       growthScore: 0,
     };
   }, [selectedDate, logs, user]);
@@ -536,6 +539,16 @@ export default function CalendarPage() {
 
     await saveLogUpdate(updated);
     setToast({ message: 'Removed food item', type: 'info' });
+  };
+
+  // Water intake handler
+  const handleAddWater = async (ml: number) => {
+    if (!selectedDate) return;
+    const currentWater = activeLog.waterMl ?? 0;
+    const newWater = Math.max(0, currentWater + ml);
+    const updated: DailyLog = { ...activeLog, waterMl: newWater };
+    await saveLogUpdate(updated);
+    setToast({ message: ml > 0 ? `+${ml}ml water logged!` : 'Water adjusted', type: 'info' });
   };
 
   const formattedSelectedDate = useMemo(() => {
@@ -1480,6 +1493,62 @@ export default function CalendarPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Section 4: Water Intake Tracker */}
+          <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-750 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-sky-400" />
+                Water Hydration Tracker
+              </h3>
+              <span className="text-xs font-bold text-sky-400">
+                {activeLog.waterMl || 0} / {profile?.macros?.water || 2500} ml
+              </span>
+            </div>
+
+            {/* Visual water progress bar */}
+            <ProgressBar
+              value={activeLog.waterMl || 0}
+              max={profile?.macros?.water || 2500}
+              color="blue"
+              height="md"
+            />
+
+            {/* Quick-add buttons */}
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              <button
+                type="button"
+                onClick={() => handleAddWater(250)}
+                className="flex-1 min-w-[70px] py-1.5 px-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 text-xs font-semibold transition-colors text-center"
+              >
+                +250 ml (Glass)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddWater(500)}
+                className="flex-1 min-w-[70px] py-1.5 px-2 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-200 text-xs font-semibold transition-colors text-center"
+              >
+                +500 ml (Bottle)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddWater(1000)}
+                className="flex-1 min-w-[70px] py-1.5 px-2 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 text-white text-xs font-bold transition-colors text-center"
+              >
+                +1000 ml (1L)
+              </button>
+              {(activeLog.waterMl ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleAddWater(-250)}
+                  className="py-1.5 px-2 rounded-lg bg-gray-750 hover:bg-gray-700 text-gray-400 hover:text-white text-xs transition-colors"
+                  title="Undo 250ml"
+                >
+                  -250 ml
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </Modal>

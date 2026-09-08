@@ -38,6 +38,7 @@ import {
   Layers,
   Repeat,
   Lightbulb,
+  CheckCircle2,
 } from 'lucide-react';
 
 export default function WorkoutPage() {
@@ -56,6 +57,11 @@ export default function WorkoutPage() {
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [isEditingDay, setIsEditingDay] = useState(false);
+
+  // Session Mode state
+  const [isSessionMode, setIsSessionMode] = useState(false);
+  const [completedSets, setCompletedSets] = useState<Record<string, boolean>>({});
+  const [sessionLogging, setSessionLogging] = useState(false);
 
   // Day editor state
   const [editDayFocus, setEditDayFocus] = useState('');
@@ -231,6 +237,82 @@ export default function WorkoutPage() {
       ? calculateDayWorkoutNutrients(currentDayData, baseMacros, profile?.weightKg)
       : null;
   }, [currentDayData, baseMacros, profile?.weightKg]);
+
+  // Session mode helpers
+  const toggleSet = (exIdx: number, setIdx: number) => {
+    const key = `${activeDay}-${exIdx}-${setIdx}`;
+    setCompletedSets(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const completedExercisesCount = useMemo(() => {
+    if (!currentDayData || !currentDayData.exercises) return 0;
+    return currentDayData.exercises.filter((ex, i) => {
+      const setsCount = ex.sets || 1;
+      return Array.from({ length: setsCount }).every((_, s) => completedSets[`${activeDay}-${i}-${s}`]);
+    }).length;
+  }, [currentDayData, completedSets, activeDay]);
+
+  const handleFinishWorkout = async () => {
+    if (!user) return;
+    setSessionLogging(true);
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const logId = `${user.uid}_${todayStr}`;
+    const cacheKey = `gymfrek_logs_${user.uid}`;
+
+    try {
+      let currentLog: any = null;
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const map = JSON.parse(cached);
+          if (map[todayStr]) currentLog = map[todayStr];
+        }
+      } catch { /* */ }
+
+      if (!currentLog) {
+        const snap = await getDoc(doc(db, 'dailyLogs', logId));
+        if (snap.exists()) currentLog = snap.data();
+      }
+
+      const updatedLog = {
+        id: logId,
+        uid: user.uid,
+        date: todayStr,
+        attendance: 'completed' as const,
+        workoutTitle: currentDayData?.focus || 'Workout Session',
+        foods: currentLog?.foods || [],
+        totalCalories: currentLog?.totalCalories || 0,
+        totalProtein: currentLog?.totalProtein || 0,
+        totalCarbs: currentLog?.totalCarbs || 0,
+        totalFat: currentLog?.totalFat || 0,
+        totalFiber: currentLog?.totalFiber || 0,
+        waterMl: currentLog?.waterMl || 0,
+        growthScore: currentLog?.growthScore || 85,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, 'dailyLogs', logId), updatedLog, { merge: true });
+
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        const map = cached ? JSON.parse(cached) : {};
+        map[todayStr] = updatedLog;
+        localStorage.setItem(cacheKey, JSON.stringify(map));
+      } catch { /* */ }
+
+      setToast({
+        message: '🎉 Workout session logged & attendance marked on your calendar!',
+        type: 'success',
+      });
+      setIsSessionMode(false);
+    } catch (e) {
+      console.error(e);
+      setToast({ message: 'Failed to record workout attendance', type: 'error' });
+    } finally {
+      setSessionLogging(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -420,14 +502,36 @@ export default function WorkoutPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {!currentDayData.isRestDay && currentDayData.exercises.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsSessionMode(s => !s)}
+                      className={`inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-lg transition-all shadow-md ${
+                        isSessionMode
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20 ring-2 ring-emerald-400/40'
+                          : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20'
+                      }`}
+                    >
+                      {isSessionMode ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" /> Live Session Active
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 fill-current" /> Start Session Mode
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => {
                       setEditingExerciseIndex(null);
                       setIsAddingExercise(true);
                     }}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white px-3.5 py-2 rounded-lg transition-colors shadow-md shadow-orange-500/20"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-700 hover:bg-gray-600 text-white px-3.5 py-2 rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" /> Add Exercise
                   </button>
@@ -442,6 +546,46 @@ export default function WorkoutPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Active Session Mode Live Tracker Banner */}
+              {isSessionMode && !currentDayData.isRestDay && (
+                <div className="bg-gradient-to-r from-emerald-950/80 via-gray-800 to-gray-800 p-4 rounded-xl border border-emerald-500/40 shadow-xl space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <h4 className="text-sm font-extrabold text-white">Live Workout Tracker</h4>
+                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                          {completedExercisesCount} of {currentDayData.exercises.length} Exercises Done
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-300 mt-1">
+                        Check off sets as you finish each exercise. When you are done, tap &quot;Finish &amp; Log Workout&quot; to mark attendance on your calendar!
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={sessionLogging}
+                      onClick={handleFinishWorkout}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs shadow-lg shadow-emerald-500/30 transition-all flex-shrink-0"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      {sessionLogging ? 'Logging Session...' : 'Finish & Log Workout'}
+                    </button>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="h-2 w-full bg-gray-750 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${currentDayData.exercises.length > 0 ? (completedExercisesCount / currentDayData.exercises.length) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Dynamic Exercise-Based Nutrition Needs Card */}
               {currentDayNutrients && (
@@ -538,18 +682,33 @@ export default function WorkoutPage() {
                 <div className="space-y-3">
                   {currentDayData.exercises.map((ex, i) => {
                     const isExpanded = expandedExercise === `${activeDay}-${i}`;
+                    const isExerciseDone = isSessionMode && Array.from({ length: ex.sets || 1 }).every((_, s) => completedSets[`${activeDay}-${i}-${s}`]);
+
                     return (
                       <div
                         key={i}
-                        className="bg-gray-800 rounded-xl border border-gray-700 hover:border-gray-600 transition-all overflow-hidden"
+                        className={`rounded-xl border transition-all overflow-hidden ${
+                          isExerciseDone
+                            ? 'bg-gray-800/95 border-emerald-500/60 shadow-md shadow-emerald-500/5'
+                            : 'bg-gray-800 border-gray-700 hover:border-gray-600'
+                        }`}
                       >
                         <div className="flex items-center justify-between p-4 gap-3">
                           <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                            <span className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-extrabold flex-shrink-0">
-                              {i + 1}
+                            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold flex-shrink-0 ${
+                              isExerciseDone ? 'bg-emerald-500 text-white' : 'bg-orange-500/20 text-orange-400'
+                            }`}>
+                              {isExerciseDone ? <Check className="w-4 h-4 stroke-[3]" /> : i + 1}
                             </span>
                             <div className="min-w-0">
-                              <p className="font-bold text-white text-sm truncate">{ex.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-white text-sm truncate">{ex.name}</p>
+                                {isExerciseDone && (
+                                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                    Done
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
                                 <span className="font-medium text-gray-300">{ex.sets} sets x {ex.reps}</span>
                                 <span>-</span>
@@ -601,6 +760,39 @@ export default function WorkoutPage() {
                             </button>
                           </div>
                         </div>
+
+                        {/* Live Session Mode - Set Tracker Bar */}
+                        {isSessionMode && (
+                          <div className="px-4 py-2.5 bg-gray-850/90 border-t border-gray-700/60 flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[11px] font-bold text-gray-400 mr-1">Log Sets:</span>
+                              {Array.from({ length: ex.sets || 1 }).map((_, s) => {
+                                const isDone = completedSets[`${activeDay}-${i}-${s}`];
+                                return (
+                                  <button
+                                    key={s}
+                                    type="button"
+                                    onClick={() => toggleSet(i, s)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                      isDone
+                                        ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 ring-1 ring-emerald-400'
+                                        : 'bg-gray-700 hover:bg-gray-650 text-gray-300 border border-gray-600'
+                                    }`}
+                                  >
+                                    {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />}
+                                    Set {s + 1}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {isExerciseDone && (
+                              <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> All Sets Complete
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {isExpanded && (
                           <div className="px-5 pb-4 border-t border-gray-700/60 pt-3 space-y-2 text-xs text-gray-300 bg-gray-750">

@@ -1,11 +1,12 @@
 'use client';
-
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { LogOut, Bell, Menu, Dumbbell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
+import NotificationsPanel from '@/components/shared/NotificationsPanel';
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -15,6 +16,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, signOut } = useAuth();
   const { profile } = useUser();
   const router = useRouter();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const handleLogout = async () => {
     await signOut();
@@ -69,14 +72,30 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       <div className="flex items-center gap-3">
         {/* Right side greeting (mobile only or subtle) */}
 
-        {/* Notifications placeholder */}
+        {/* Notifications button */}
         <button
-          className="relative rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white"
+          onClick={() => setShowNotifications(s => !s)}
+          className={`relative rounded-lg p-2 transition-colors ${
+            showNotifications
+              ? 'bg-gray-800 text-orange-400'
+              : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+          }`}
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-orange-500" />
+          {unreadCount > 0 && (
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[9px] font-bold text-white shadow-sm">
+              {unreadCount}
+            </span>
+          )}
         </button>
+
+        {/* Notifications panel modal/dropdown */}
+        <NotificationsPanel
+          isOpen={showNotifications}
+          onClose={() => setShowNotifications(false)}
+          onUnreadCountChange={setUnreadCount}
+        />
 
         {/* Avatar */}
         {user?.photoURL ? (
