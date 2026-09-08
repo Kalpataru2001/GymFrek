@@ -249,6 +249,28 @@ export default function CalendarPage() {
     };
   }, [logs]);
 
+  // Last 7 days streak data (reuses existing logs map)
+  const weekStreak = useMemo(() => {
+    const days: { dateStr: string; label: string; status: 'completed' | 'rest' | 'missed' | 'none'; isToday: boolean }[] = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = formatToLocalDateString(d);
+      const log = logs[dateStr];
+      const status = log?.attendance ?? 'none';
+      const label = i === 0 ? 'T' : d.toLocaleDateString('en-US', { weekday: 'narrow' });
+      days.push({ dateStr, label, status, isToday: i === 0 });
+    }
+    // Count current streak (consecutive completed going backwards from today)
+    let streak = 0;
+    for (let i = days.length - 1; i >= 0; i--) {
+      if (days[i].status === 'completed') streak++;
+      else break;
+    }
+    return { days, streak };
+  }, [logs]);
+
   // Active day log
   const activeLog = useMemo((): DailyLog => {
     if (!selectedDate) {
@@ -565,6 +587,60 @@ export default function CalendarPage() {
               <span className="text-[11px] sm:text-xs font-bold text-emerald-400 truncate block">{monthStats.avgScore}%</span>
             </div>
           </div>
+        </div>
+      </div>
+      {/* --- 7-DAY STREAK VISUALIZATION --------------------------------------- */}
+      <div className="bg-gray-800 rounded-2xl border border-gray-700 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* Streak counter */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-xl ${
+            weekStreak.streak >= 5 ? 'bg-orange-500 text-white' :
+            weekStreak.streak >= 3 ? 'bg-orange-500/30 text-orange-300' :
+            weekStreak.streak >= 1 ? 'bg-orange-500/15 text-orange-400' :
+            'bg-gray-700 text-gray-500'
+          }`}>
+            {weekStreak.streak}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">
+              {weekStreak.streak === 0 ? 'No streak yet' : `${weekStreak.streak}-day streak`}
+            </p>
+            <p className="text-[11px] text-gray-400">Consecutive workouts completed</p>
+          </div>
+        </div>
+
+        <div className="h-px sm:h-10 w-full sm:w-px bg-gray-700 sm:bg-gray-700 flex-shrink-0" />
+
+        {/* 7-day dots */}
+        <div className="flex items-end gap-2 flex-1 justify-between sm:justify-start">
+          {weekStreak.days.map(day => {
+            const dotColor =
+              day.status === 'completed' ? 'bg-orange-500 ring-2 ring-orange-500/30' :
+              day.status === 'rest'      ? 'bg-sky-400 ring-2 ring-sky-400/30' :
+              day.status === 'missed'    ? 'bg-red-500 ring-2 ring-red-500/30' :
+              'bg-gray-700';
+            const labelColor =
+              day.isToday ? 'text-orange-300 font-bold' : 'text-gray-500';
+            return (
+              <button
+                key={day.dateStr}
+                onClick={() => setSelectedDate(day.dateStr)}
+                className="flex flex-col items-center gap-1.5 group"
+                title={`${day.dateStr} — ${day.status}`}
+              >
+                <span className={`text-[10px] font-semibold ${labelColor}`}>{day.label}</span>
+                <div className={`w-7 h-7 rounded-full ${dotColor} transition-transform group-hover:scale-110`} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div className="flex sm:flex-col gap-3 sm:gap-1.5 text-[10px] text-gray-500 flex-shrink-0">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500 inline-block" />Done</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400 inline-block" />Rest</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Missed</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-700 inline-block" />None</span>
         </div>
       </div>
 

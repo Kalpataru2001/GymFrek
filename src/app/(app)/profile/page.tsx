@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
@@ -16,6 +16,7 @@ export default function ProfilePage() {
   const [toast, setToast] = useState<{message:string;type:'success'|'error'|'info'}|null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    displayName: '',
     age: 25,
     heightCm: 170,
     weightKg: 70,
@@ -26,6 +27,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setForm({
+        displayName: profile.displayName || user?.displayName || '',
         age: profile.age ?? 25,
         heightCm: profile.heightCm ?? 170,
         weightKg: profile.weightKg ?? 70,
@@ -35,7 +37,7 @@ export default function ProfilePage() {
           : (profile.goal ? [profile.goal] : ['maintain']),
       });
     }
-  }, [profile]);
+  }, [profile, user]);
 
   const toggleGoal = (val: UserGoal) => {
     setForm(prev => {
@@ -61,6 +63,7 @@ export default function ProfilePage() {
     const tdee = calculateTDEE(bmr, form.activityLevel);
     const macros = calculateMacros(tdee, form.goals, form.weightKg);
     await updateProfile({
+      displayName: form.displayName.trim() || profile?.displayName || null,
       age: form.age,
       heightCm: form.heightCm,
       weightKg: form.weightKg,
@@ -125,14 +128,43 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {/* Macro Summary Panel */}
+      {profile?.macros && (
+        <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">Daily Macro Targets</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Protein', value: profile.macros.protein, unit: 'g', bg: 'bg-orange-500/15 border-orange-500/30', text: 'text-orange-300' },
+              { label: 'Carbs',   value: profile.macros.carbs,   unit: 'g', bg: 'bg-blue-500/15 border-blue-500/30',   text: 'text-blue-300' },
+              { label: 'Fat',     value: profile.macros.fat,     unit: 'g', bg: 'bg-yellow-500/15 border-yellow-500/30', text: 'text-yellow-300' },
+              { label: 'Fiber',   value: profile.macros.fiber,   unit: 'g', bg: 'bg-emerald-500/15 border-emerald-500/30', text: 'text-emerald-300' },
+            ].map(m => (
+              <div key={m.label} className={`rounded-lg border ${m.bg} p-3 text-center`}>
+                <p className={`text-lg font-bold ${m.text}`}>{m.value}<span className="text-xs ml-0.5">{m.unit}</span></p>
+                <p className="text-[11px] text-gray-400 mt-0.5">{m.label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-3 text-center">Recalculate below if you update your metrics or goals.</p>
+        </div>
+      )}
+
       {/* Edit form */}
       <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-5">
-        <h3 className="text-lg font-semibold text-white">Update Body Metrics & Goals</h3>
+        <h3 className="text-lg font-semibold text-white">Update Profile & Goals</h3>
         <div className="grid grid-cols-2 gap-4">
+          {/* Display Name — full width */}
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Display Name</label>
+            <input type="text" value={form.displayName} maxLength={40}
+              placeholder="How you want to be greeted"
+              onChange={e=>setForm(prev=>({...prev, displayName: e.target.value}))}
+              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 placeholder-gray-500"/>
+          </div>
           {[{label:'Age',key:'age',min:13,max:100},{label:'Height (cm)',key:'heightCm',min:100,max:250},{label:'Weight (kg)',key:'weightKg',min:20,max:300}].map(f=>(
             <div key={f.key}>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">{f.label}</label>
-              <input type="number" value={form[f.key as keyof typeof form]} min={f.min} max={f.max}
+              <input type="number" value={form[f.key as 'age'|'heightCm'|'weightKg']} min={f.min} max={f.max}
                 onChange={e=>setForm(prev=>({...prev,[f.key]:Number(e.target.value)}))}
                 className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"/>
             </div>

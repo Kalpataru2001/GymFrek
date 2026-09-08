@@ -399,18 +399,35 @@ export default function ProgressPage() {
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  {MACRO_BARS.map(cfg => (
-                    <MacroBar
-                      key={cfg.key}
-                      label={cfg.label}
-                      actual={dailyLog?.[cfg.logKey] ?? 0}
-                      target={dayImpact.targetMacros[cfg.key]}
-                      unit={cfg.unit}
-                      color={cfg.color}
-                    />
-                  ))}
-                </div>
+                {!dailyLog ? (
+                  /* Empty state — no food logged for this date */
+                  <div className="flex flex-col items-center py-5 gap-3 text-center">
+                    <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
+                      <Utensils className="w-6 h-6 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-300">No food logged for this day</p>
+                      <p className="text-xs text-gray-500 mt-1">Log your meals on the Calendar to see your nutrition breakdown here.</p>
+                    </div>
+                    <a href="/calendar" className="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-3 py-1.5 rounded-lg transition-colors">
+                      <Utensils className="w-3.5 h-3.5" />
+                      Log Meals on Calendar
+                    </a>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {MACRO_BARS.map(cfg => (
+                      <MacroBar
+                        key={cfg.key}
+                        label={cfg.label}
+                        actual={dailyLog[cfg.logKey] ?? 0}
+                        target={dayImpact.targetMacros[cfg.key]}
+                        unit={cfg.unit}
+                        color={cfg.color}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {/* Score pillar breakdown */}
                 <div className="pt-2 border-t border-gray-700">
