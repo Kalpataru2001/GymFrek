@@ -1161,13 +1161,88 @@ export function searchLocalFoods(query: string): FoodEntry[] {
   if (!query || !query.trim()) return POPULAR_FOODS_DATABASE.slice(0, 15);
   const q = query.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '');
 
-  return POPULAR_FOODS_DATABASE.filter(f => {
+  const builtIn = POPULAR_FOODS_DATABASE.filter(f => {
     const nameMatch = f.name.toLowerCase().includes(q);
     const categoryMatch = f.category.toLowerCase().includes(q);
     const aliasMatch = f.aliases.some(a => a.toLowerCase().includes(q) || q.includes(a.toLowerCase()));
     const ingredientMatch = f.ingredients.some(ing => ing.toLowerCase().includes(q));
     return nameMatch || categoryMatch || aliasMatch || ingredientMatch;
   });
+
+  // Also search user-saved custom foods (browser only)
+  const custom = loadCustomFoods().filter(f => {
+    const nameMatch = f.name.toLowerCase().includes(q);
+    const aliasMatch = f.aliases.some(a => a.toLowerCase().includes(q));
+    return nameMatch || aliasMatch;
+  });
+
+  // Deduplicate by id; custom foods appear first (marked as personal)
+  const seen = new Set<string>();
+  const results: FoodEntry[] = [];
+  [...custom, ...builtIn].forEach(f => {
+    if (!seen.has(f.id)) { seen.add(f.id); results.push(f); }
+  });
+  return results;
+}
+
+// ─── Custom User-Saved Foods (localStorage) ────────────────────────────────────
+
+const CUSTOM_FOODS_KEY = 'gymfrek_custom_foods';
+
+/** Load all user-saved custom foods from localStorage (safe for SSR). */
+export function loadCustomFoods(): FoodEntry[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CUSTOM_FOODS_KEY);
+    return raw ? (JSON.parse(raw) as FoodEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Save a new custom food built from AI result data. Returns the saved entry. */
+export function saveCustomFood(params: {
+  name: string;
+  per100g: { calories: number; protein: number; carbs: number; fat: number; fiber: number };
+  ingredients?: string[];
+}): FoodEntry {
+  const id = `custom_${Date.now()}_${params.name.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30)}`;
+
+  const entry: FoodEntry = {
+    id,
+    name: params.name,
+    aliases: [params.name.toLowerCase()],
+    category: 'Breakfast & Snacks',
+    portionType: 'weight',
+    servingUnits: [
+      { label: 'Grams (g)', grams: 1 },
+      { label: '1 Serving (100g)', grams: 100 },
+    ],
+    defaultUnitIndex: 1,
+    quickPortions: [50, 100, 150, 200],
+    ingredients: params.ingredients ?? [],
+    per100g: params.per100g,
+  };
+
+  const existing = loadCustomFoods();
+  // Avoid duplicates by name (case-insensitive)
+  const deduped = existing.filter(
+    e => e.name.toLowerCase() !== params.name.toLowerCase()
+  );
+  const updated = [entry, ...deduped];
+  try {
+    localStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(updated));
+  } catch { /* quota exceeded — silently ignore */ }
+  return entry;
+}
+
+/** Delete a custom food by id. */
+export function deleteCustomFood(id: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const updated = loadCustomFoods().filter(f => f.id !== id);
+    localStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(updated));
+  } catch { /* */ }
 }
 
 /**

@@ -17,6 +17,7 @@ import {
   FoodEntry,
   searchLocalFoods,
   calculateFoodNutrition,
+  saveCustomFood,
 } from '@/lib/food-database';
 import { WorkoutPlan, WorkoutDay } from '@/lib/workout-engine';
 import type { ParsedFoodResult } from '@/lib/ai-nutrition-engine';
@@ -52,6 +53,7 @@ import {
   Layers,
   Activity,
   Droplets,
+  BookmarkPlus,
 } from 'lucide-react';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'] as const;
@@ -549,6 +551,31 @@ export default function CalendarPage() {
     const updated: DailyLog = { ...activeLog, waterMl: newWater };
     await saveLogUpdate(updated);
     setToast({ message: ml > 0 ? `+${ml}ml water logged!` : 'Water adjusted', type: 'info' });
+  };
+
+  // Save AI-found food to Instant Search database (localStorage custom foods)
+  const handleSaveAiFoodToSearch = () => {
+    if (!aiResult) return;
+    const title = aiResult.summaryTitle || aiPrompt || 'Custom Food';
+    const totalGrams = aiResult.totalGrams || 100;
+    const factor = 100 / Math.max(totalGrams, 1);
+
+    saveCustomFood({
+      name: title,
+      per100g: {
+        calories: Math.round((aiResult.totalCalories || 0) * factor),
+        protein: Math.round((aiResult.totalProtein || 0) * factor * 10) / 10,
+        carbs: Math.round((aiResult.totalCarbs || 0) * factor * 10) / 10,
+        fat: Math.round((aiResult.totalFat || 0) * factor * 10) / 10,
+        fiber: Math.round((aiResult.totalFiber || 0) * factor * 10) / 10,
+      },
+      ingredients: aiResult.ingredients ?? [],
+    });
+
+    setToast({
+      message: `"${title}" saved to Instant Search! Search for it next time.`,
+      type: 'success',
+    });
   };
 
   const formattedSelectedDate = useMemo(() => {
@@ -1167,14 +1194,17 @@ export default function CalendarPage() {
                     {foodSearchQuery.trim().length > 0 && (
                       <div className="bg-gray-800 rounded-xl border border-gray-700 max-h-48 overflow-y-auto divide-y divide-gray-700/50">
                         {filteredFoods.length === 0 ? (
-                          <div className="p-3 text-center">
-                            <p className="text-xs text-gray-400">No food found with that name.</p>
+                          <div className="p-3 text-center space-y-1.5">
+                            <p className="text-xs text-gray-400">No food found in database.</p>
+                            <p className="text-[10px] text-gray-500">
+                              Try <span className="text-purple-400 font-semibold">AI Assistant</span> to calculate it, then save to Instant Search!
+                            </p>
                             <button
                               type="button"
                               onClick={() => startCustomFood(foodSearchQuery)}
-                              className="mt-1 text-xs text-orange-400 hover:underline font-semibold"
+                              className="text-xs text-orange-400 hover:underline font-semibold"
                             >
-                              + Add &quot;{foodSearchQuery}&quot; as custom food
+                              + Add &quot;{foodSearchQuery}&quot; as manual custom food
                             </button>
                           </div>
                         ) : (
@@ -1183,13 +1213,20 @@ export default function CalendarPage() {
                               key={f.id}
                               type="button"
                               onClick={() => handleSelectFood(f)}
-                              className="w-full p-2.5 text-left hover:bg-gray-700/50 flex items-center justify-between transition-colors"
+                              className="w-full p-2.5 text-left hover:bg-gray-700/50 flex items-center justify-between transition-colors gap-2"
                             >
-                              <div>
-                                <span className="text-xs font-semibold text-white block">{f.name}</span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-semibold text-white truncate">{f.name}</span>
+                                  {f.id.startsWith('custom_') && (
+                                    <span className="text-[9px] font-bold text-purple-300 bg-purple-500/20 border border-purple-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                      My Saved
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-[10px] text-gray-400 block">{f.category}</span>
                               </div>
-                              <span className="text-xs font-bold text-orange-400">
+                              <span className="text-xs font-bold text-orange-400 flex-shrink-0">
                                 {f.per100g.calories} kcal/100g
                               </span>
                             </button>
@@ -1372,6 +1409,22 @@ export default function CalendarPage() {
                             <span><strong>Ingredients:</strong> {aiResult.ingredients.join(', ')}</span>
                           </div>
                         )}
+
+                        {/* Save to Instant Search button */}
+                        <div className="pt-1 border-t border-gray-700/50 flex items-center justify-between gap-2">
+                          <p className="text-[10px] text-gray-400 leading-snug">
+                            Not in Instant Search? Save it so you can find it next time without AI!
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleSaveAiFoodToSearch}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-purple-200 hover:text-white text-[11px] font-bold transition-all flex-shrink-0 shadow-sm"
+                            title="Save this food's nutrition data to Instant Search database"
+                          >
+                            <BookmarkPlus className="w-3.5 h-3.5" />
+                            Save to Search
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
