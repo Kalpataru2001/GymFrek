@@ -13,6 +13,7 @@ import {
   calculateDayWorkoutNutrients,
   generateDailySummaryReport,
   DailySummaryReport,
+  calculateMacros,
 } from '@/lib/calculations';
 import { WorkoutPlan, WorkoutDay } from '@/lib/workout-engine';
 import type { DailyLog } from '@/lib/types';
@@ -223,13 +224,28 @@ export default function ProgressPage() {
     return workoutPlan.schedule[dow === 0 ? 6 : dow - 1] || null;
   }, [workoutPlan, selectedDate]);
 
-  const baseMacros = useMemo(() => ({
-    calories: profile?.macros?.calories ?? 2000,
-    protein:  profile?.macros?.protein  ?? 140,
-    carbs:    profile?.macros?.carbs    ?? 200,
-    fat:      profile?.macros?.fat      ?? 60,
-    fiber:    profile?.macros?.fiber    ?? 30,
-  }), [profile]);
+  const baseMacros = useMemo(() => {
+    if (profile?.tdee && profile?.weightKg) {
+      const goals = (profile.goals && profile.goals.length > 0)
+        ? profile.goals
+        : (profile.goal ? [profile.goal] : ['maintain']);
+      const fresh = calculateMacros(profile.tdee, goals, profile.weightKg);
+      return {
+        calories: fresh.calories,
+        protein: fresh.protein,
+        carbs: fresh.carbs,
+        fat: fresh.fat,
+        fiber: fresh.fiber,
+      };
+    }
+    return {
+      calories: profile?.macros?.calories ?? 2000,
+      protein:  profile?.macros?.protein  ?? 140,
+      carbs:    profile?.macros?.carbs    ?? 200,
+      fat:      profile?.macros?.fat      ?? 60,
+      fiber:    profile?.macros?.fiber    ?? 30,
+    };
+  }, [profile]);
 
   const dayImpact = useMemo(() =>
     calculateDayWorkoutNutrients(scheduledDay, baseMacros, profile?.weightKg),

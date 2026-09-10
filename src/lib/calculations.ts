@@ -169,15 +169,37 @@ export function getGoalStrategyLabel(goals: string | string[]): { title: string;
 }
 
 /**
- * Calculates daily macro targets based on TDEE and single or multiple goals.
+ * Calculates daily macro targets based on TDEE, fitness goal(s), and body weight.
  *
- * Multi-goal intelligent strategies:
- *  - lose_weight + gain_muscle : Body Recomp (−250 kcal deficit, 38% protein, 37% carbs, 25% fat)
- *  - gain_muscle + improve_fitness : Athletic Build (+250 kcal surplus, 30% protein, 45% carbs, 25% fat)
- *  - lose_weight + improve_fitness : Conditioning Deficit (−400 kcal deficit, 35% protein, 40% carbs, 25% fat)
- *  - lose_weight : Deficit (−500 kcal, 35% protein, 35% carbs, 30% fat)
- *  - gain_muscle : Surplus (+300 kcal, 30% protein, 45% carbs, 25% fat)
- *  - maintain / improve_fitness : Balanced (TDEE, 30% protein, 40% carbs, 30% fat)
+ * Evidence-Based Sports Science Methodology (ISSN / ACSM guidelines):
+ *
+ * 1. CALORIE TARGET:
+ *  - lose_weight + gain_muscle (Body Recomposition): TDEE − 250 kcal (moderate deficit for fat oxidation + muscle repair)
+ *  - lose_weight + improve_fitness (Conditioning Deficit): TDEE − 400 kcal
+ *  - lose_weight (Pure Fat Loss): TDEE − 500 kcal (~0.5 kg fat loss/week)
+ *  - gain_muscle + improve_fitness (Athletic Hypertrophy): TDEE + 250 kcal (lean surplus)
+ *  - gain_muscle (Lean Bulking): TDEE + 300 kcal (lean muscle surplus without excess fat gain)
+ *  - maintain / improve_fitness: TDEE as-is (energy balance)
+ *  - Minimum calorie safety floor: 1200 kcal
+ *
+ * 2. PROTEIN (Anchored to body weight in kg):
+ *  - Body Recomp (lose_weight + gain_muscle): ~2.1 g / kg (maximum muscle retention in a deficit)
+ *  - Fat Loss (lose_weight): ~2.0 g / kg (preserves lean tissue during calorie deficit)
+ *  - Muscle Gain (gain_muscle): ~1.9 g / kg (anabolic surplus ensures optimal MPS with 1.8-2.0g)
+ *  - Maintain / Fitness: ~1.7 g / kg
+ *  - Fallback (when weight is unknown): 28% of total calories / 4
+ *  - Clamped safely between 55g minimum and 2.4g/kg ceiling.
+ *
+ * 3. FAT (Hormonal balance and vitamin absorption):
+ *  - 25% to 30% of target calories (~0.7g - 1.0g per kg)
+ *
+ * 4. CARBOHYDRATES (Workout performance, glycogen & energy):
+ *  - All remaining calories allocated to carbs:
+ *    (targetCalories - protein*4 - fat*9) / 4
+ *
+ * 5. FIBER & WATER:
+ *  - Fiber: 14g per 1000 kcal, clamped 25g to 40g
+ *  - Water: 35ml/kg (or 38ml/kg for muscle gain/recomp/intense training)
  */
 export function calculateMacros(
   tdee: number,
@@ -190,62 +212,74 @@ export function calculateMacros(
   const hasFitness = list.includes('improve_fitness');
 
   let targetCalories: number;
-  let proteinPct: number;
+  let proteinPerKg: number;
   let fatPct: number;
-  let carbPct: number;
 
   if (hasLose && hasGain) {
     // Body Recomposition
     targetCalories = tdee - 250;
-    proteinPct = 0.38;
+    proteinPerKg = 2.1;
     fatPct = 0.25;
-    carbPct = 0.37;
   } else if (hasGain && hasFitness) {
     // Athletic Hypertrophy
     targetCalories = tdee + 250;
-    proteinPct = 0.30;
+    proteinPerKg = 1.9;
     fatPct = 0.25;
-    carbPct = 0.45;
   } else if (hasLose && hasFitness) {
     // Fat Loss + Conditioning
     targetCalories = tdee - 400;
-    proteinPct = 0.35;
+    proteinPerKg = 2.0;
     fatPct = 0.25;
-    carbPct = 0.40;
   } else if (hasLose) {
     // Pure Fat Loss
     targetCalories = tdee - 500;
-    proteinPct = 0.35;
-    fatPct = 0.30;
-    carbPct = 0.35;
+    proteinPerKg = 2.0;
+    fatPct = 0.26;
   } else if (hasGain) {
-    // Pure Hypertrophy
+    // Pure Hypertrophy (Lean Bulk)
     targetCalories = tdee + 300;
-    proteinPct = 0.30;
+    proteinPerKg = 1.9;
     fatPct = 0.25;
-    carbPct = 0.45;
   } else {
     // Maintain / General Fitness
     targetCalories = tdee;
-    proteinPct = 0.30;
-    fatPct = 0.30;
-    carbPct = 0.40;
+    proteinPerKg = 1.7;
+    fatPct = 0.28;
   }
 
   // Enforce a safe calorie floor
   targetCalories = Math.max(targetCalories, 1200);
 
-  // Protein & Carbs = 4 kcal/g, Fat = 9 kcal/g
-  const protein = Math.round((targetCalories * proteinPct) / 4);
-  const fat = Math.round((targetCalories * fatPct) / 9);
-  const carbs = Math.round((targetCalories * carbPct) / 4);
+  // 1. Protein: Anchored to bodyweight (or percentage fallback if weight is absent)
+  let protein: number;
+  if (weightKg && weightKg > 20) {
+    protein = Math.round(weightKg * proteinPerKg);
+    // Safety clamp: at least 55g, at most 2.4g/kg
+    protein = Math.max(55, Math.min(protein, Math.round(weightKg * 2.4)));
+  } else {
+    // Percentage fallback: 28% of calories
+    protein = Math.round((targetCalories * 0.28) / 4);
+  }
 
-  // Fiber: ~14g per 1000 kcal, clamped between 25g and 45g
+  // 2. Fat: 25-28% of total calories (minimum 0.6g/kg for endocrine health)
+  let fat = Math.round((targetCalories * fatPct) / 9);
+  if (weightKg && weightKg > 20) {
+    fat = Math.max(fat, Math.round(weightKg * 0.65));
+  } else {
+    fat = Math.max(fat, 40);
+  }
+
+  // 3. Carbs: Remaining calories allocated to carbohydrates
+  const allocatedCalories = (protein * 4) + (fat * 9);
+  const remainingForCarbs = Math.max(160, targetCalories - allocatedCalories);
+  const carbs = Math.round(remainingForCarbs / 4);
+
+  // 4. Fiber: ~14g per 1000 kcal, clamped between 25g and 40g
   const rawFiber = Math.round((targetCalories / 1000) * 14);
-  const fiber = Math.min(Math.max(rawFiber, 25), 45);
+  const fiber = Math.min(Math.max(rawFiber, 25), 40);
 
-  // Water: 35ml/kg body weight (or 38ml for high protein / athletes); default 2500ml
-  const waterMultiplier = (hasGain || hasFitness) ? 38 : 35;
+  // 5. Water: 35ml/kg body weight (or 38ml for high training / muscle gain); default 2500ml
+  const waterMultiplier = (hasGain || hasFitness || (hasLose && hasGain)) ? 38 : 35;
   const water = weightKg ? Math.round(weightKg * waterMultiplier) : 2500;
 
   return { calories: targetCalories, protein, carbs, fat, fiber, water };
@@ -646,20 +680,20 @@ export function calculateDayWorkoutNutrients(
   // Intensity classification
   let intensityLabel: WorkoutNutrientImpact['intensityLabel'] = 'Moderate Training';
   let intensityColor = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-  let proteinBonus = 12;
+  let proteinBonus = 6;
 
   if (estimatedBurnKcal >= 450 || heavyMuscleVolume >= 12 || cardioCount >= 2) {
     intensityLabel = 'Extreme Intensity';
     intensityColor = 'text-red-400 bg-red-500/10 border-red-500/30';
-    proteinBonus = 25;
+    proteinBonus = 12;
   } else if (estimatedBurnKcal >= 320 || heavyMuscleVolume >= 8) {
     intensityLabel = 'Heavy Resistance';
     intensityColor = 'text-orange-400 bg-orange-500/10 border-orange-500/30';
-    proteinBonus = 20;
+    proteinBonus = 10;
   } else if (estimatedBurnKcal < 220) {
     intensityLabel = 'Light Activity';
     intensityColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-    proteinBonus = 8;
+    proteinBonus = 3;
   }
 
   // Refueling allocation:

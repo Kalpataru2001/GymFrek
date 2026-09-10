@@ -11,6 +11,7 @@ import {
   DayHealthVisual,
   calculateDayWorkoutNutrients,
   WorkoutNutrientImpact,
+  calculateMacros,
 } from '@/lib/calculations';
 import {
   POPULAR_FOODS_DATABASE,
@@ -199,14 +200,29 @@ export default function CalendarPage() {
     fetchMonthLogs();
   }, [fetchMonthLogs]);
 
-  // Target base macros
-  const targets = useMemo(() => ({
-    calories: profile?.macros?.calories ?? 2000,
-    protein: profile?.macros?.protein ?? 140,
-    carbs: profile?.macros?.carbs ?? 200,
-    fat: profile?.macros?.fat ?? 60,
-    fiber: profile?.macros?.fiber ?? 30,
-  }), [profile]);
+  // Target base macros (dynamically calibrated using evidence-based bodyweight formula)
+  const targets = useMemo(() => {
+    if (profile?.tdee && profile?.weightKg) {
+      const goals = (profile.goals && profile.goals.length > 0)
+        ? profile.goals
+        : (profile.goal ? [profile.goal] : ['maintain']);
+      const fresh = calculateMacros(profile.tdee, goals, profile.weightKg);
+      return {
+        calories: fresh.calories,
+        protein: fresh.protein,
+        carbs: fresh.carbs,
+        fat: fresh.fat,
+        fiber: fresh.fiber,
+      };
+    }
+    return {
+      calories: profile?.macros?.calories ?? 2000,
+      protein: profile?.macros?.protein ?? 140,
+      carbs: profile?.macros?.carbs ?? 200,
+      fat: profile?.macros?.fat ?? 60,
+      fiber: profile?.macros?.fiber ?? 30,
+    };
+  }, [profile]);
 
   // Calendar math
   const daysInMonth = new Date(year, month + 1, 0).getDate();

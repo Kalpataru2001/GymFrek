@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     displayName: '',
+    gender: 'male' as 'male' | 'female',
     age: 25,
     heightCm: 170,
     weightKg: 70,
@@ -28,6 +29,7 @@ export default function ProfilePage() {
     if (profile) {
       setForm({
         displayName: profile.displayName || user?.displayName || '',
+        gender: (profile.gender === 'female' ? 'female' : 'male') as 'male' | 'female',
         age: profile.age ?? 25,
         heightCm: profile.heightCm ?? 170,
         weightKg: profile.weightKg ?? 70,
@@ -57,13 +59,14 @@ export default function ProfilePage() {
 
   const recalculate = async () => {
     setSaving(true);
-    const gender = (profile?.gender || 'male') as 'male'|'female';
+    const gender = form.gender;
     const {bmi, category} = calculateBMI(form.weightKg, form.heightCm);
     const bmr = calculateBMR(form.weightKg, form.heightCm, form.age, gender);
     const tdee = calculateTDEE(bmr, form.activityLevel);
     const macros = calculateMacros(tdee, form.goals, form.weightKg);
     await updateProfile({
       displayName: form.displayName.trim() || profile?.displayName || null,
+      gender,
       age: form.age,
       heightCm: form.heightCm,
       weightKg: form.weightKg,
@@ -134,18 +137,19 @@ export default function ProfilePage() {
           <h3 className="text-sm font-semibold text-gray-300 mb-3">Daily Macro Targets</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Protein', value: profile.macros.protein, unit: 'g', bg: 'bg-orange-500/15 border-orange-500/30', text: 'text-orange-300' },
-              { label: 'Carbs',   value: profile.macros.carbs,   unit: 'g', bg: 'bg-blue-500/15 border-blue-500/30',   text: 'text-blue-300' },
-              { label: 'Fat',     value: profile.macros.fat,     unit: 'g', bg: 'bg-yellow-500/15 border-yellow-500/30', text: 'text-yellow-300' },
-              { label: 'Fiber',   value: profile.macros.fiber,   unit: 'g', bg: 'bg-emerald-500/15 border-emerald-500/30', text: 'text-emerald-300' },
+              { label: 'Protein', value: profile.macros.protein, unit: 'g', sub: `~${((profile.macros.protein) / (profile.weightKg || 70)).toFixed(1)}g/kg`, bg: 'bg-orange-500/15 border-orange-500/30', text: 'text-orange-300' },
+              { label: 'Carbs',   value: profile.macros.carbs,   unit: 'g', sub: 'Fuel & Glycogen', bg: 'bg-blue-500/15 border-blue-500/30',   text: 'text-blue-300' },
+              { label: 'Fat',     value: profile.macros.fat,     unit: 'g', sub: 'Hormone Health', bg: 'bg-yellow-500/15 border-yellow-500/30', text: 'text-yellow-300' },
+              { label: 'Fiber',   value: profile.macros.fiber,   unit: 'g', sub: 'Gut & Satiety', bg: 'bg-emerald-500/15 border-emerald-500/30', text: 'text-emerald-300' },
             ].map(m => (
               <div key={m.label} className={`rounded-lg border ${m.bg} p-3 text-center`}>
                 <p className={`text-lg font-bold ${m.text}`}>{m.value}<span className="text-xs ml-0.5">{m.unit}</span></p>
                 <p className="text-[11px] text-gray-400 mt-0.5">{m.label}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{m.sub}</p>
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-3 text-center">Recalculate below if you update your metrics or goals.</p>
+          <p className="text-xs text-gray-500 mt-3 text-center">Calculated using evidence-based sports nutrition anchored to your body weight &amp; goals.</p>
         </div>
       )}
 
@@ -161,19 +165,42 @@ export default function ProfilePage() {
               onChange={e=>setForm(prev=>({...prev, displayName: e.target.value}))}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 placeholder-gray-500"/>
           </div>
-          {[{label:'Age',key:'age',min:13,max:100},{label:'Height (cm)',key:'heightCm',min:100,max:250},{label:'Weight (kg)',key:'weightKg',min:20,max:300}].map(f=>(
-            <div key={f.key}>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">{f.label}</label>
-              <input type="number" value={form[f.key as 'age'|'heightCm'|'weightKg']} min={f.min} max={f.max}
-                onChange={e=>setForm(prev=>({...prev,[f.key]:Number(e.target.value)}))}
-                className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"/>
-            </div>
-          ))}
+
           <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Gender</label>
+            <select value={form.gender} onChange={e=>setForm(p=>({...p, gender: e.target.value as 'male'|'female'}))}
+              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Age</label>
+            <input type="number" value={form.age} min={13} max={100}
+              onChange={e=>setForm(prev=>({...prev, age: Number(e.target.value)}))}
+              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"/>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Height (cm)</label>
+            <input type="number" value={form.heightCm} min={100} max={250}
+              onChange={e=>setForm(prev=>({...prev, heightCm: Number(e.target.value)}))}
+              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"/>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Weight (kg)</label>
+            <input type="number" value={form.weightKg} min={20} max={300}
+              onChange={e=>setForm(prev=>({...prev, weightKg: Number(e.target.value)}))}
+              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500"/>
+          </div>
+
+          <div className="col-span-2">
             <label className="block text-sm font-medium text-gray-300 mb-1.5">Activity Level</label>
             <select value={form.activityLevel} onChange={e=>setForm(p=>({...p, activityLevel: e.target.value as ActivityLevel}))}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500">
-              {[['sedentary','Sedentary'],['light','Lightly Active'],['moderate','Moderately Active'],['active','Very Active'],['very_active','Extra Active']].map(([v,l])=>(
+              {[['sedentary','Sedentary (Little or no exercise)'],['light','Lightly Active (1-3 days/week)'],['moderate','Moderately Active (3-5 days/week)'],['active','Very Active (6-7 days/week)'],['very_active','Extra Active (Very intense training/physical job)']].map(([v,l])=>(
                 <option key={v} value={v}>{l}</option>
               ))}
             </select>
