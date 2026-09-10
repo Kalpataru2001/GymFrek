@@ -1205,21 +1205,31 @@ export function saveCustomFood(params: {
   name: string;
   per100g: { calories: number; protein: number; carbs: number; fat: number; fiber: number };
   ingredients?: string[];
+  gramsPerPiece?: number; // if provided, adds a "1 Piece" serving unit
 }): FoodEntry {
   const id = `custom_${Date.now()}_${params.name.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30)}`;
+
+  const servingUnits: FoodServingUnit[] = [
+    { label: 'Grams (g)', grams: 1 },
+  ];
+
+  if (params.gramsPerPiece && params.gramsPerPiece > 0) {
+    const g = Math.round(params.gramsPerPiece);
+    servingUnits.push({ label: `1 Piece (~${g}g)`, grams: g });
+    servingUnits.push({ label: `1 Serving (100g)`, grams: 100 });
+  } else {
+    servingUnits.push({ label: `1 Serving (100g)`, grams: 100 });
+  }
 
   const entry: FoodEntry = {
     id,
     name: params.name,
     aliases: [params.name.toLowerCase()],
     category: 'Breakfast & Snacks',
-    portionType: 'weight',
-    servingUnits: [
-      { label: 'Grams (g)', grams: 1 },
-      { label: '1 Serving (100g)', grams: 100 },
-    ],
-    defaultUnitIndex: 1,
-    quickPortions: [50, 100, 150, 200],
+    portionType: params.gramsPerPiece ? 'count' : 'weight',
+    servingUnits,
+    defaultUnitIndex: params.gramsPerPiece ? 1 : 1, // default to piece if available, else 100g serving
+    quickPortions: params.gramsPerPiece ? [1, 2, 3, 5] : [50, 100, 150, 200],
     ingredients: params.ingredients ?? [],
     per100g: params.per100g,
   };

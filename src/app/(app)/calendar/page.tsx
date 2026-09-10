@@ -560,6 +560,28 @@ export default function CalendarPage() {
     const totalGrams = aiResult.totalGrams || 100;
     const factor = 100 / Math.max(totalGrams, 1);
 
+    // Try to derive grams-per-piece so we can offer a "1 Piece" serving unit.
+    // Strategy 1: parse leading number from title (e.g. "3 Dates (Khajur)" → 3 pieces)
+    // Strategy 2: if multiple items exist, treat each as 1 piece and average grams
+    let gramsPerPiece: number | undefined;
+
+    const leadingNum = title.match(/^(\d+(?:\.\d+)?)\s/);
+    if (leadingNum) {
+      const count = parseFloat(leadingNum[1]);
+      if (count > 0) gramsPerPiece = totalGrams / count;
+    } else if (aiResult.items && aiResult.items.length > 1) {
+      // Multiple items (e.g., a meal with 3 ingredients) — treat totalGrams / itemCount as piece weight
+      gramsPerPiece = totalGrams / aiResult.items.length;
+    } else if (aiResult.items && aiResult.items.length === 1) {
+      // Single item: the entire serving = 1 piece
+      if (totalGrams > 0) gramsPerPiece = totalGrams;
+    }
+
+    // Clamp to sensible range: 1g–2000g per piece
+    if (gramsPerPiece !== undefined && (gramsPerPiece < 1 || gramsPerPiece > 2000)) {
+      gramsPerPiece = undefined;
+    }
+
     saveCustomFood({
       name: title,
       per100g: {
@@ -570,13 +592,16 @@ export default function CalendarPage() {
         fiber: Math.round((aiResult.totalFiber || 0) * factor * 10) / 10,
       },
       ingredients: aiResult.ingredients ?? [],
+      gramsPerPiece,
     });
 
+    const pieceInfo = gramsPerPiece ? ` with Piece unit (~${Math.round(gramsPerPiece)}g/piece)` : '';
     setToast({
-      message: `"${title}" saved to Instant Search! Search for it next time.`,
+      message: `"${title}" saved to Instant Search${pieceInfo}!`,
       type: 'success',
     });
   };
+
 
   const formattedSelectedDate = useMemo(() => {
     if (!selectedDate) return '';
