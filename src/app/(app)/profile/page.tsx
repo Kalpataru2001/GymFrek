@@ -8,7 +8,8 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Toast from '@/components/ui/Toast';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { Check } from 'lucide-react';
+import { Check, Smartphone } from 'lucide-react';
+import InstallPwaPrompt from '@/components/shared/InstallPwaPrompt';
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -247,6 +248,20 @@ export default function ProfilePage() {
         <button onClick={recalculate} disabled={saving || form.goals.length === 0} className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors">
           {saving ? 'Saving...' : '🔄 Save & Recalculate Stats'}
         </button>
+      </div>
+
+      {/* App Installation */}
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-orange-400" />
+            Install GymFrek on Your Phone
+          </h3>
+          <InstallPwaPrompt />
+        </div>
+        <p className="text-xs text-gray-400 leading-relaxed">
+          Install GymFrek as a standalone Progressive Web App (PWA) on your Android or iPhone home screen. Runs in full-screen with fast offline caching and no browser address bar.
+        </p>
       </div>
 
       {/* Account actions */}

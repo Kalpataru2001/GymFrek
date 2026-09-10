@@ -7,6 +7,7 @@ import { LogOut, Bell, Menu, Dumbbell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUser } from '@/contexts/UserContext';
 import NotificationsPanel from '@/components/shared/NotificationsPanel';
+import InstallPwaPrompt from '@/components/shared/InstallPwaPrompt';
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -70,7 +71,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
-        {/* Right side greeting (mobile only or subtle) */}
+        {/* PWA Install Button */}
+        <InstallPwaPrompt />
 
         {/* Notifications button */}
         <button
