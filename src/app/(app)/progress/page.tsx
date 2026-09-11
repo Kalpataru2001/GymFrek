@@ -22,6 +22,7 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts';
 import Toast from '@/components/ui/Toast';
+import WeeklyPredictorCard from '@/components/progress/WeeklyPredictorCard';
 import {
   Activity, TrendingUp, Flame, Target, Dumbbell,
   Utensils, CheckCircle2, XCircle, Moon, Clock,
@@ -160,6 +161,41 @@ export default function ProgressPage() {
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   const recentDays = useMemo(() => last7Days(), []);
+
+  // ── 7-Day logs for predictor ──────────────────────────────────────────────
+  const [allLogsMap, setAllLogsMap] = useState<Record<string, DailyLog>>({});
+
+  const fetchWeeklyLogs = useCallback(async () => {
+    if (!user) return;
+    const cacheKey = `gymfrek_logs_${user.uid}`;
+    let currentMap: Record<string, DailyLog> = {};
+    try {
+      const c = localStorage.getItem(cacheKey);
+      if (c) {
+        currentMap = JSON.parse(c) as Record<string, DailyLog>;
+        setAllLogsMap(currentMap);
+      }
+    } catch { /* */ }
+
+    try {
+      const promises = recentDays.map(dStr =>
+        getDoc(doc(db, 'dailyLogs', `${user.uid}_${dStr}`))
+      );
+      const snaps = await Promise.all(promises);
+      const updatedMap = { ...currentMap };
+      snaps.forEach((snap, idx) => {
+        const dStr = recentDays[idx];
+        if (snap.exists()) {
+          updatedMap[dStr] = snap.data() as DailyLog;
+        }
+      });
+      setAllLogsMap(updatedMap);
+    } catch { /* */ }
+  }, [user, recentDays]);
+
+  useEffect(() => {
+    fetchWeeklyLogs();
+  }, [fetchWeeklyLogs]);
 
   // ── Fetch weight logs ──────────────────────────────────────────────────────
   const fetchLogs = useCallback(async () => {
@@ -561,6 +597,18 @@ export default function ProgressPage() {
 
           </div>
         ) : null}
+      </section>
+
+      {/* ─── 7-DAY CALORIE BALANCE & BODY PREDICTOR ─────────────────────── */}
+      <section>
+        <WeeklyPredictorCard
+          logsMap={allLogsMap}
+          recentDates={recentDays.slice().reverse()}
+          tdee={profile?.tdee || 2200}
+          weightKg={profile?.weightKg}
+          goals={profile?.goals || (profile?.goal ? [profile.goal] : ['maintain'])}
+          workoutPlan={workoutPlan}
+        />
       </section>
 
       {/* ─── WEIGHT LOG + BMI ─────────────────────────────────────────── */}
