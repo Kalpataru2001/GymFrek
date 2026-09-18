@@ -23,6 +23,8 @@ import {
 } from 'recharts';
 import Toast from '@/components/ui/Toast';
 import WeeklyPredictorCard from '@/components/progress/WeeklyPredictorCard';
+import StreakHabitCard from '@/components/progress/StreakHabitCard';
+import MacroTrendCard from '@/components/progress/MacroTrendCard';
 import {
   Activity, TrendingUp, Flame, Target, Dumbbell,
   Utensils, CheckCircle2, XCircle, Moon, Clock,
@@ -50,6 +52,15 @@ function last7Days(): string[] {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 }
+
+function last30Days(): string[] {
+  return Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
+}
+
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -162,8 +173,9 @@ export default function ProgressPage() {
   const [reportLoading, setReportLoading] = useState(false);
   const recentDays = useMemo(() => last7Days(), []);
 
-  // ── 7-Day logs for predictor ──────────────────────────────────────────────
+  // ── 30-Day logs for predictor + streak + macro trends ────────────────────
   const [allLogsMap, setAllLogsMap] = useState<Record<string, DailyLog>>({});
+  const allDates30 = useMemo(() => last30Days(), []);
 
   const fetchWeeklyLogs = useCallback(async () => {
     if (!user) return;
@@ -178,24 +190,26 @@ export default function ProgressPage() {
     } catch { /* */ }
 
     try {
-      const promises = recentDays.map(dStr =>
+      const promises = allDates30.map(dStr =>
         getDoc(doc(db, 'dailyLogs', `${user.uid}_${dStr}`))
       );
       const snaps = await Promise.all(promises);
       const updatedMap = { ...currentMap };
       snaps.forEach((snap, idx) => {
-        const dStr = recentDays[idx];
+        const dStr = allDates30[idx];
         if (snap.exists()) {
           updatedMap[dStr] = snap.data() as DailyLog;
         }
       });
       setAllLogsMap(updatedMap);
+      try { localStorage.setItem(cacheKey, JSON.stringify(updatedMap)); } catch { /* */ }
     } catch { /* */ }
-  }, [user, recentDays]);
+  }, [user, allDates30]);
 
   useEffect(() => {
     fetchWeeklyLogs();
   }, [fetchWeeklyLogs]);
+
 
   // ── Fetch weight logs ──────────────────────────────────────────────────────
   const fetchLogs = useCallback(async () => {
@@ -608,6 +622,29 @@ export default function ProgressPage() {
           weightKg={profile?.weightKg}
           goals={profile?.goals || (profile?.goal ? [profile.goal] : ['maintain'])}
           workoutPlan={workoutPlan}
+        />
+      </section>
+
+      {/* ─── STREAK & HABIT RINGS ──────────────────────────────────────── */}
+      <section>
+        <StreakHabitCard
+          logsMap={allLogsMap}
+          proteinTarget={baseMacros.protein}
+          recentDates={allDates30}
+        />
+      </section>
+
+      {/* ─── MACRO TREND CHARTS ────────────────────────────────────────── */}
+      <section>
+        <MacroTrendCard
+          logsMap={allLogsMap}
+          allDates={allDates30}
+          targets={{
+            calories: baseMacros.calories,
+            protein: baseMacros.protein,
+            carbs: baseMacros.carbs,
+            fat: baseMacros.fat,
+          }}
         />
       </section>
 
