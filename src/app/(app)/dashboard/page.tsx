@@ -13,6 +13,8 @@ import Link from 'next/link';
 import { Dumbbell, Apple, Weight, Flame, Droplets, Target, CheckCircle2, XCircle, Moon, Clock, Calendar, Activity } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import type { DailyLog, WorkoutAttendance } from '@/lib/types';
+import type { WorkoutPlan } from '@/lib/workout-engine';
+import DailyCoachCard from '@/components/dashboard/DailyCoachCard';
 
 interface WeightEntry { date: string; weightKg: number; }
 
@@ -42,6 +44,8 @@ export default function DashboardPage() {
   const [weightLogs, setWeightLogs] = useState<WeightEntry[]>([]);
   const [todayLog, setTodayLog] = useState<DailyLog | null>(null);
   const [todayLogLoaded, setTodayLogLoaded] = useState(false);
+  const [yesterdayLog, setYesterdayLog] = useState<DailyLog | null>(null);
+  const [workoutPlan, setWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [weeklyHistory, setWeeklyHistory] = useState<{
     date: string;
     dayLabel: string;
@@ -62,6 +66,31 @@ export default function DashboardPage() {
       setWeightLogs(data);
     });
   }, [user]);
+
+  // Load yesterday's log and workout plan for coach card
+  useEffect(() => {
+    if (!user) return;
+    // Yesterday's log from cache
+    try {
+      const logsMap: Record<string, DailyLog> = JSON.parse(localStorage.getItem(`gymfrek_logs_${user.uid}`) || '{}');
+      const yest = new Date(); yest.setDate(yest.getDate() - 1);
+      const yStr = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, '0')}-${String(yest.getDate()).padStart(2, '0')}`;
+      setYesterdayLog(logsMap[yStr] ?? null);
+    } catch { /* */ }
+    // Workout plan from cache
+    try {
+      const wp = localStorage.getItem(`gymfrek_workout_plan_${user.uid}`);
+      if (wp) setWorkoutPlan(JSON.parse(wp) as WorkoutPlan);
+    } catch { /* */ }
+    // Verify yesterday from Firestore
+    const yest2 = new Date(); yest2.setDate(yest2.getDate() - 1);
+    const yStr2 = `${yest2.getFullYear()}-${String(yest2.getMonth() + 1).padStart(2, '0')}-${String(yest2.getDate()).padStart(2, '0')}`;
+    getDoc(doc(db, 'dailyLogs', `${user.uid}_${yStr2}`)).then(snap => {
+      setYesterdayLog(snap.exists() ? (snap.data() as DailyLog) : null);
+    }).catch(() => { /* */ });
+  }, [user]);
+
+
 
   // Fetch today's daily log and 7-day history for live dashboard status
   useEffect(() => {
@@ -214,6 +243,16 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-white">{greeting}, {name}! &#128170;</h1>
         <p className="text-gray-400 mt-1">{new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
       </div>
+
+      {/* AI Daily Coach */}
+      {profile && (
+        <DailyCoachCard
+          profile={profile}
+          yesterdayLog={yesterdayLog}
+          workoutPlan={workoutPlan}
+          todayDow={new Date().getDay()}
+        />
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
