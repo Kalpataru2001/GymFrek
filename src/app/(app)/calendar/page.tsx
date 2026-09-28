@@ -382,14 +382,38 @@ export default function CalendarPage() {
     }
   };
 
+  // Makeup workout picker state
+  const [showMakeupPicker, setShowMakeupPicker] = useState(false);
+
   const setAttendance = async (att: WorkoutAttendance) => {
     if (!selectedDate) return;
+    // If marking "completed" on a rest day → show makeup picker
+    if (att === 'completed' && selectedScheduledDay?.isRestDay) {
+      setShowMakeupPicker(true);
+      return;
+    }
     const updated: DailyLog = {
       ...activeLog,
       attendance: att,
+      workoutTitle: att === 'completed'
+        ? (selectedScheduledDay?.focus ?? activeLog.workoutTitle)
+        : undefined,
     };
     await saveLogUpdate(updated);
     setToast({ message: `Attendance marked as ${att}!`, type: 'success' });
+  };
+
+  const handleMakeupSelect = async (day: WorkoutDay | null) => {
+    if (!selectedDate) return;
+    setShowMakeupPicker(false);
+    const updated: DailyLog = {
+      ...activeLog,
+      attendance: 'completed',
+      workoutTitle: day ? `${day.focus} (Makeup)` : 'Workout Done',
+    };
+    await saveLogUpdate(updated);
+    const msg = day ? `Saved: ${day.focus} makeup workout!` : 'Workout marked as completed!';
+    setToast({ message: msg, type: 'success' });
   };
 
   const handleSelectFood = (food: FoodEntry) => {
@@ -970,7 +994,7 @@ export default function CalendarPage() {
       {/* --- DAY INSPECTOR MODAL --------------------------------------------- */}
       <Modal
         isOpen={!!selectedDate}
-        onClose={() => { setSelectedDate(null); setShowAddFood(false); }}
+        onClose={() => { setSelectedDate(null); setShowAddFood(false); setShowMakeupPicker(false); }}
         title={selectedDate ? `Daily Log : ${formattedSelectedDate}` : ''}
         size="lg"
       >
@@ -1072,31 +1096,108 @@ export default function CalendarPage() {
               <Target className="w-4 h-4 text-orange-400" />
               Workout Attendance Check-In
             </h3>
-            <div className="grid grid-cols-3 gap-2.5">
-              {[
-                { val: 'completed', label: 'Workout Done', Icon: Flame, activeCls: 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' },
-                { val: 'rest', label: 'Rest Day', Icon: Moon, activeCls: 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' },
-                { val: 'missed', label: 'Missed', Icon: XCircle, activeCls: 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20' },
-              ].map(opt => {
-                const IconComponent = opt.Icon;
-                return (
+
+            {/* ── Makeup Workout Picker ── */}
+            {showMakeupPicker && workoutPlan && (
+              <div className="space-y-3 animate-in fade-in duration-200">
+                {/* Header */}
+                <div className="flex items-center gap-2 p-3 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+                  <Dumbbell className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-orange-300">Making Up a Missed Workout?</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">This is a rest day on your plan. Choose which workout you want to do today:</p>
+                  </div>
+                </div>
+
+                {/* Workout day options — only non-rest days */}
+                <div className="space-y-2">
+                  {workoutPlan.schedule
+                    .filter(d => !d.isRestDay)
+                    .map((d, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleMakeupSelect(d)}
+                        className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-600 bg-gray-700 hover:bg-gray-600 hover:border-orange-500/50 text-left transition-all group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                            <Dumbbell className="w-4 h-4 text-orange-400" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-white group-hover:text-orange-300 transition-colors">{d.focus}</p>
+                            <p className="text-[10px] text-gray-400">{d.day} &bull; {d.exercises?.length ?? 0} exercises</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-orange-400 transition-colors flex-shrink-0" />
+                      </button>
+                    ))
+                  }
+                  {/* Skip option */}
                   <button
-                    key={opt.val}
                     type="button"
-                    onClick={() => setAttendance(opt.val as WorkoutAttendance)}
-                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
-                      activeLog.attendance === opt.val
-                        ? opt.activeCls
-                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
-                    }`}
+                    onClick={() => handleMakeupSelect(null)}
+                    className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-gray-700 bg-gray-800 hover:bg-gray-700 text-xs text-gray-400 hover:text-white transition-all"
                   >
-                    <IconComponent className="w-4 h-4" />
-                    <span>{opt.label}</span>
+                    <Flame className="w-3.5 h-3.5 text-orange-400" />
+                    Just mark as completed (no specific workout)
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMakeupPicker(false)}
+                    className="w-full text-[10px] text-gray-500 hover:text-gray-300 transition-colors py-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Normal attendance buttons (hidden while picker is open) */}
+            {!showMakeupPicker && (
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { val: 'completed', label: 'Workout Done', Icon: Flame, activeCls: 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20' },
+                    { val: 'rest', label: 'Rest Day', Icon: Moon, activeCls: 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20' },
+                    { val: 'missed', label: 'Missed', Icon: XCircle, activeCls: 'bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20' },
+                  ].map(opt => {
+                    const IconComponent = opt.Icon;
+                    return (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() => setAttendance(opt.val as WorkoutAttendance)}
+                        className={`py-2.5 px-3 rounded-lg text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 ${
+                          activeLog.attendance === opt.val
+                            ? opt.activeCls
+                            : 'bg-gray-700 border-gray-600 text-gray-300 hover:border-gray-500'
+                        }`}
+                      >
+                        <IconComponent className="w-4 h-4" />
+                        <span>{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Show makeup hint if this is a rest day */}
+                {selectedScheduledDay?.isRestDay && (
+                  <p className="text-[10px] text-gray-500 flex items-center gap-1.5 px-1">
+                    <Info className="w-3 h-3 text-orange-400/70 flex-shrink-0" />
+                    Tapping &quot;Workout Done&quot; will let you choose a makeup workout from your plan.
+                  </p>
+                )}
+                {/* Show the makeup workout title if already saved */}
+                {activeLog.attendance === 'completed' && activeLog.workoutTitle && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                    <Dumbbell className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+                    <p className="text-[11px] text-orange-300 font-semibold">{activeLog.workoutTitle}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
 
           {/* Section 2: Daily Growth Score Card */}
           <div className={`p-4 rounded-xl border ${activeBreakdown.badgeColor}`}>
